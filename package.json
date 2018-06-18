@@ -1,0 +1,25 @@
+{
+  "name": "summer-starter",
+  "version": "1.0.0",
+  "description": "This project is built on the Villanelle project : https://github.com/owaisiqbal91/villanelle This project used the sigma.js library.",
+  "main": "index.js",
+  "dependencies": {
+    "@types/node": "^10.3.3",
+    "@types/sigmajs": "^1.0.27",
+    "commonjs": "0.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhangsiyu1103/summer-starter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zhangsiyu1103/summer-starter/issues"
+  },
+  "homepage": "https://github.com/zhangsiyu1103/summer-starter#readme"
+}
