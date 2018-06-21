@@ -6,7 +6,8 @@
   "dependencies": {
     "@types/node": "^10.3.3",
     "@types/sigmajs": "^1.0.27",
-    "commonjs": "0.0.1"
+    "commonjs": "0.0.1",
+    "sigma": "^1.2.1"
   },
   "devDependencies": {},
   "scripts": {
