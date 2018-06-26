@@ -104,7 +104,7 @@ function newNodes(node_t) {
                 // Display attributes:
                 x: node_t.x + Math.random() / 3,
                 y: node_t.y + Math.random() / 3,
-                size: 1,
+                size: 20,
                 color: 'fff',
                 borderColor: '#b956af'
             });
@@ -156,7 +156,7 @@ sigmaInstance.graph.addNode({
     // Display attributes:
     x: Math.random(),
     y: Math.random(),
-    size: 1,
+    size: 20,
     color: '#fff',
     borderColor: '#f00'
 }).addNode({
@@ -166,7 +166,7 @@ sigmaInstance.graph.addNode({
     // Display attributes:
     x: Math.random(),
     y: Math.random(),
-    size: 1,
+    size: 20,
     color: '#fff',
     borderColor: '#00f'
 }).addNode({
@@ -176,7 +176,7 @@ sigmaInstance.graph.addNode({
     // Display attributes:
     x: Math.random(),
     y: Math.random(),
-    size: 1,
+    size: 20,
     color: '#fff',
     borderColor: '#0ff'
 }).addEdge({
@@ -198,7 +198,7 @@ sigmaInstance.refresh();
 
 var config = {
     nodeMargin: 40.0,
-    scaleNodes: 1.3
+    scaleNodes: 10
 };
 
 // Configure the algorithm
@@ -239,8 +239,9 @@ dragListener.bind('dragend', function (event) {
 function click_node_function(event) {
     console.log(event);
     if (bool[event.data.node.label] == false) {
-        newNodes(event.data.node);
+        //newNodes(event.data.node);
+        console.log(event.data.node.x + ", " + event.data.node.y);
     } else {
-        remove_connect(event.data.node.id);
+        //remove_connect(event.data.node.id);
     }
 }

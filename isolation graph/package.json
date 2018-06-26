@@ -1,0 +1,8 @@
+{
+  "name": "",
+  "version": "",
+  "dependencies": {
+    "@types/node": "^10.3.4",
+    "sigma": "^1.2.1"
+  }
+}
