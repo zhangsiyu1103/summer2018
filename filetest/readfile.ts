@@ -1,3 +1,6 @@
+
+
+
 function readTextFile(file) {
     var rawFile = new XMLHttpRequest();
     rawFile.onreadystatechange = function () {
