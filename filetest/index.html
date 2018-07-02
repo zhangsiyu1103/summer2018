@@ -1,13 +1,43 @@
-
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <meta charset="utf-8"/>
+    <title>Isolation</title>
+    <style type="text/css">
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+    </style>
+
 </head>
+
+<!--<body onload="begin();">-->
+
 <body>
-<script type="text/javascript" src = 'readfile.js'></script>
+<div class="container">
+
+    <canvas id="display" width="3000" height="1000">
+        Canvas not supported
+    </canvas>
+    <style>
+        #graph-container {
+            position: absolute;
+            top: 50px;
+            right: 400px;
+            left: 400px;
+            bottom: 400px;
+            border: 3px solid #73AD21;
+            align-content: center;
+        }
+
+        #container {
+            position: relative;
+        }
+    </style>
+    <div id="graph-container"></div>
+    <script type="text/javascript" src="bundle.js"></script>
+</div>
 </body>
 </html>

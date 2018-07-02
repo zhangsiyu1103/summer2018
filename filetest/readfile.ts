@@ -1,10 +1,26 @@
 let files = ["../data/university.csv", "../data/LastNames.csv"]
+let sigma = require('sigma');
+(<any>window).sigma = sigma;
+require('sigma/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
+require('sigma/plugins/sigma.plugins.animate/sigma.plugins.animate');
+require('sigma/plugins/sigma.layout.noverlap/sigma.layout.noverlap');
+require('sigma/src/middlewares/sigma.middlewares.rescale');
+
 
 function getRandNumber(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-async function readFiles():Promise<string[]> {
+function getRandomColor() {
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+async function readFiles(): Promise<string[]> {
     let data: string[][] = [];
     let rows: string[];
     let BuildingList: { [key: string]: number } = {};
@@ -32,6 +48,7 @@ async function readFiles():Promise<string[]> {
     }
     for (let i = 0; i < data[0].length; i++) {
         rows = data[0][i].split(',');
+        console.log(rows);
         BuildingList[rows[0]] = getRandNumber(Number(rows[1]), Number(rows[2]));
     }
     PrefixList = data[1];
@@ -44,7 +61,179 @@ async function readFiles():Promise<string[]> {
     }
     return Promise.resolve(returnList);
 }
-readFiles().then(function(value) {
-    var Locations:string[];
-    Locations = value;
+
+readFiles().then(function (value) {
+    var locationGraph = connectNodes(value);
+    visualize(locationGraph);
 })
+
+
+function connectNodes(location: string[]): { [key: string]: string[] } {
+    let nodes: { [key: string]: string[] } = {};
+    let visited: { [key: string]: boolean } = {};
+    for (let i = 0; i < location.length; i++) {
+        visited[location[i]] = false;
+    }
+    let stack: string[] = [];
+    let rest: string[] = [];
+
+    //randomly generate a graph
+    for (let i = 0; i < location.length; i++) {
+        if ((typeof nodes[location[i]]) === 'undefined') {
+            nodes[location[i]] = []
+        }
+        for (let j = i + 1; j < location.length; j++) {
+            if ((typeof nodes[location[j]]) === 'undefined') {
+                nodes[location[j]] = [];
+            }
+            if (Math.random() < 0.1) {
+                nodes[location[i]].push(location[j]);
+            }
+        }
+    }
+    //making sure it is connected
+    for (let i = 0; i < location.length; i++) {
+        if (visited[location[i]] == false) {
+            let item: string = location[i];
+            stack.push(location[i]);
+            while (stack.length > 0) {
+                var cur = stack.pop();
+                if (cur !== undefined) {
+                    if (visited[cur] == false) {
+                        visited[cur] = true;
+                        if (Math.random() < 0.3) {
+                            item = cur;
+                        }
+                        for (let val of nodes[cur]) {
+                            stack.push(val);
+                        }
+                    }
+                }
+            }
+            rest.push(item);
+        }
+    }
+    console.log(rest);
+    for (let i = 0; i < rest.length - 1; i++) {
+        nodes[rest[i]].push(rest[i + 1]);
+    }
+    return nodes;
+}
+
+
+function visualize(locationGraph: { [key: string]: string[] }) {
+//for custom shapes
+    sigma.canvas.nodes.border = function (node: any, context: any, settings: any) {
+        var prefix = settings('prefix') || '';
+
+        context.fillStyle = node.color || settings('defaultNodeColor');
+        context.beginPath();
+        context.arc(
+            node[prefix + 'x'],
+            node[prefix + 'y'],
+            node[prefix + 'size'],
+            0,
+            Math.PI * 2,
+            true
+        );
+
+        context.closePath();
+        context.fill();
+
+        // Adding a border
+        context.lineWidth = node.borderWidth || 2;
+        context.strokeStyle = node.borderColor || '#fff';
+        context.stroke();
+    };
+//Initialize sigma
+    var sigmaInstance = new sigma({
+        graph: {
+            nodes: [],
+            edges: []
+        },
+        renderer: {
+            type: 'canvas',
+            container: 'graph-container'
+        },
+        settings: {
+            defaultNodeColor: '#000',
+            defaultNodeType: 'border',
+            defaultLabelColor: '#fff',
+            labelThreshold: 100,
+            defaultEdgeColor: '#fff',
+            edgeColor: 'default'
+        }
+    });
+
+    var edgeID: number = 0;
+
+    for (var locations in locationGraph) {
+        sigmaInstance.graph.addNode({
+            // Main attributes:
+            id: locations,
+            label: locations,
+            x: Math.random(),
+            y: Math.random(),
+            size: 17,
+            borderColor: getRandomColor()
+        });
+    }
+    for (var locations in locationGraph) {
+        let adjacent = locationGraph[locations];
+        for (var adj of adjacent) {
+            sigmaInstance.graph.addEdge({
+                id: 'e' + (edgeID++).toString(),
+                source: locations,
+                target: adj,
+                size: 10
+            })
+        }
+    }
+
+    var dragListener = sigma.plugins.dragNodes(
+        sigmaInstance, sigmaInstance.renderers[0]);
+
+    dragListener.bind('startdrag', function (event: string) {
+        console.log(event);
+    });
+    dragListener.bind('drag', function (event: string) {
+        console.log(event);
+    });
+    dragListener.bind('drop', function (event: string) {
+        console.log(event);
+    });
+    dragListener.bind('dragend', function (event: string) {
+        console.log(event);
+    });
+
+    sigmaInstance.refresh();
+
+    var config = {
+        nodeMargin: 20,
+        gridSize: 5,
+    };
+
+//Configure the algorithm
+    var listener = sigmaInstance.configNoverlap(config);
+
+//Bind all events:
+    listener.bind('start stop interpolate', function (event: any) {
+        console.log(event.type);
+    });
+
+//Start the algorithm:
+    sigmaInstance.startNoverlap();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
