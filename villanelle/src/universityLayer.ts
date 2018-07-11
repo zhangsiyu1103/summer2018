@@ -8,15 +8,140 @@ import {
 } from "./scripting";
 import {isUndefined} from "typescript-collections/dist/lib/util";
 
-let files = ["../data/university.csv",
-    "../data/LastNames.csv"]
-
 let sigma = require('sigma');
 (<any>window).sigma = sigma;
 require('sigma/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
 require('sigma/plugins/sigma.plugins.animate/sigma.plugins.animate');
 require('sigma/plugins/sigma.layout.noverlap/sigma.layout.noverlap');
 require('sigma/src/middlewares/sigma.middlewares.rescale');
+
+type maps = { [key: string]: string[] };
+
+var filePrefix = "../data/university/";
+var fileSuffix = ".csv"
+let files = ["cfgGramma", "Prefix"]
+
+class cfgTrees {
+    private val: string;
+    private branches: cfgTrees[] | null;
+    private idLabel: { [key: string]: string };
+
+
+    constructor(name: string, rule: maps, prefix: string[], prevName: string) {
+        var cleanName: string;
+        this.branches = null;
+        this.idLabel = {}
+        if (name.startsWith('#')) {
+            this.branches = [];
+            if (name.endsWith('*')) {
+                cleanName = name.substring(1, name.length - 1);
+                this.val = cleanName;
+                this.idLabel[this.val] = cleanName;
+            } else if (name.endsWith('$')) {
+                cleanName = name.substring(1, name.length - 1);
+                this.val = prevName + " " + cleanName;
+                this.idLabel[this.val] = cleanName;
+            } else {
+                cleanName = name.substring(1, name.length);
+                this.val = retRand(prefix) + " " + cleanName;
+                this.idLabel[this.val] = this.val
+            }
+            var children: string[] = rule[cleanName];
+            for (let value of children) {
+                var newBranch = new cfgTrees(value, rule, prefix, this.val);
+                combine(this.idLabel, newBranch.idLabel);
+                this.branches.push(newBranch);
+            }
+        } else if (name.endsWith('*')) {
+            cleanName = name.substring(0, name.length - 1);
+            this.val = cleanName;
+            this.idLabel[this.val] = cleanName;
+        } else if (name.endsWith('$')) {
+            cleanName = name.substring(0, name.length - 1);
+            this.val = prevName + " " + cleanName;
+            this.idLabel[this.val] = cleanName;
+        } else {
+            cleanName = name;
+            this.val = retRand(prefix) + " " + cleanName;
+            this.idLabel[this.val] = this.val
+        }
+    }
+
+    getValue(): string {
+        return this.val;
+    }
+
+    getBranches(): cfgTrees[] | null {
+        return this.branches;
+    }
+
+    isLeaf(): boolean {
+        return (this.branches == null);
+    }
+
+    getIdLabelPair(): { [key: string]: string } {
+        return this.idLabel;
+    }
+
+    getBranchValues(): string[] {
+        let ret: string[] = [];
+        if (this.branches != null) {
+            for (let value of this.branches) {
+                ret.push(value.val);
+            }
+        }
+        return ret;
+    }
+
+    getExpandList(): maps {
+        let expandList: maps = {};
+        if (this.branches != null) {
+            expandList[this.val] = this.getBranchValues();
+            for (let tree of this.branches) {
+                combine(expandList, tree.getExpandList());
+            }
+        }
+        return expandList;
+    }
+
+    getExpandGraph(): { [key: string]: maps } {
+        let expandList = this.getExpandList();
+        let expandGraph: { [key: string]: maps } = {};
+        for (var keys of Object.keys(expandList)) {
+            expandGraph[keys] = connectNodes(expandList[keys]);
+        }
+        return expandGraph;
+    }
+
+    //This method ignores the first value of the tree
+    getAllValues(): string[] {
+        var ret: string[] = [];
+        ret = ret.concat(this.getBranchValues());
+        if (this.branches != null) {
+            for (let tree of this.branches) {
+                ret = ret.concat(tree.getBranchValues())
+            }
+        }
+        return ret;
+    }
+
+    print(): void {
+        if (this.branches != null) {
+            console.log(this.branches);
+            for (let value of this.branches) {
+                value.print();
+            }
+        }
+    }
+
+}
+
+function retRand(list: any[]) {
+    var index = getRandNumber(0, list.length - 1);
+    var ret = list[index];
+    list.splice(index, 1);
+    return ret;
+}
 
 //function for random color
 //Taken from https://stackoverflow.com/questions/1484506/random-color-generator
@@ -30,26 +155,26 @@ function getRandomColor() {
 }
 
 async function readFiles(): Promise<string[]> {
-    let data: string[][] = [];
+    let data: { [key: string]: string[] } = [];
     let rows: string[];
     let BuildingList: { [key: string]: number } = {};
     let PrefixList: string[] = [];
     let returnList: string[] = [];
-    for (var file of files) {
+    for (let file in fileNames) {
         let value = await new Promise(function (resolve, reject) {
                 var req = new XMLHttpRequest();
                 req.onreadystatechange = function () {
                     if (this.readyState == 4) {
                         if (this.status == 200) {
                             var lines = this.responseText.split(/\n|\r\n/);
-                            data.push(lines);
+                            data[file] = lines;
                             resolve(lines);
                         } else {
                             reject(Error(req.statusText));
                         }
                     }
                 }
-                req.open("GET", file, true);
+                req.open("GET", filePrefix + file + fileSuffix, true);
                 req.responseType = "text";
                 req.send(null);
             }
@@ -57,17 +182,16 @@ async function readFiles(): Promise<string[]> {
     }
     for (let i = 0; i < data[0].length; i++) {
         rows = data[0][i].split(',');
-        console.log(rows);
         BuildingList[rows[0]] = getRandNumber(Number(rows[1]), Number(rows[2]));
     }
     PrefixList = data[1];
     for (var key in BuildingList) {
         for (let j = 0; j < BuildingList[key]; j++) {
-            if(key != "Exit") {
+            if (key != "Exit") {
                 let index = getRandNumber(0, PrefixList.length - 1);
                 returnList.push(PrefixList[index] + " " + key);
                 PrefixList.splice(index, 1);
-            }else{
+            } else {
                 returnList.push(key);
             }
         }
@@ -75,10 +199,32 @@ async function readFiles(): Promise<string[]> {
     return Promise.resolve(returnList);
 }
 
-readFiles().then(function (value) {
-    var Graph = connectNodes(value);
-    InitializeVilillane(Graph);
-})
+async function readFiles(): Promise<maps> {
+    let data: maps = {};
+
+    for (var file of files) {
+        let value = await new Promise(function (resolve, reject) {
+                var req = new XMLHttpRequest();
+                req.onreadystatechange = function () {
+                    if (this.readyState == 4) {
+                        if (this.status == 200) {
+                            var lines = this.responseText.split(/\n|\r\n/);
+                            data[file] = lines;
+                            resolve(lines);
+                        } else {
+                            reject(Error(req.statusText));
+                        }
+                    }
+                }
+                req.open("GET", file + filesuffix, true);
+                req.responseType = "text";
+                req.send(null);
+            }
+        );
+    }
+
+    return Promise.resolve(data);
+}
 
 
 function connectNodes(location: string[]): { [key: string]: string[] } {
@@ -99,7 +245,7 @@ function connectNodes(location: string[]): { [key: string]: string[] } {
             if ((typeof nodes[location[j]]) === 'undefined') {
                 nodes[location[j]] = [];
             }
-            if (Math.random() < 0.05) {
+            if (Math.random() < 0.06) {
                 nodes[location[i]].push(location[j]);
             }
         }
@@ -131,110 +277,110 @@ function connectNodes(location: string[]): { [key: string]: string[] } {
     }
     return nodes;
 }
-
-function visualize(Graph: { [key: string]: string[] }) {
-//for custom shapes
-    sigma.canvas.nodes.border = function (node: any, context: any, settings: any) {
-        var prefix = settings('prefix') || '';
-
-        context.fillStyle = node.color || settings('defaultNodeColor');
-        context.beginPath();
-        context.arc(
-            node[prefix + 'x'],
-            node[prefix + 'y'],
-            node[prefix + 'size'],
-            0,
-            Math.PI * 2,
-            true
-        );
-
-        context.closePath();
-        context.fill();
-
-        // Adding a border
-        context.lineWidth = node.borderWidth || 2;
-        context.strokeStyle = node.borderColor || '#fff';
-        context.stroke();
-    };
-//Initialize sigma
-    var sigmaInstance = new sigma({
-        graph: {
-            nodes: [],
-            edges: []
-        },
-        renderer: {
-            type: 'canvas',
-            container: 'graph-container'
-        },
-        settings: {
-            defaultNodeColor: '#000',
-            defaultNodeType: 'border',
-            defaultLabelColor: '#fff',
-            labelThreshold: 100,
-            defaultEdgeColor: '#fff',
-            edgeColor: 'default'
-        }
-    });
-
-    var edgeID: number = 0;
-
-    for (var locations in Graph) {
-        sigmaInstance.graph.addNode({
-            // Main attributes:
-            id: locations,
-            label: locations,
-            x: Math.random(),
-            y: Math.random(),
-            size: 17,
-            borderColor: getRandomColor()
-        });
-    }
-    for (var locations in Graph) {
-        let adjacent = Graph[locations];
-        for (var adj of adjacent) {
-            sigmaInstance.graph.addEdge({
-                id: 'e' + (edgeID++).toString(),
-                source: locations,
-                target: adj,
-                size: 10
-            })
-        }
-    }
-
-    var dragListener = sigma.plugins.dragNodes(
-        sigmaInstance, sigmaInstance.renderers[0]);
-
-    dragListener.bind('startdrag', function (event: string) {
-        console.log(event);
-    });
-    dragListener.bind('drag', function (event: string) {
-        console.log(event);
-    });
-    dragListener.bind('drop', function (event: string) {
-        console.log(event);
-    });
-    dragListener.bind('dragend', function (event: string) {
-        console.log(event);
-    });
-
-    sigmaInstance.refresh();
-
-    var config = {
-        nodeMargin: 20,
-        gridSize: 5,
-    };
-
-//Configure the algorithm
-    var listener = sigmaInstance.configNoverlap(config);
-
-//Bind all events:
-    listener.bind('start stop interpolate', function (event: any) {
-        console.log(event.type);
-    });
-
-//Start the algorithm:
-    sigmaInstance.startNoverlap();
-}
+//
+// function visualize(Graph: { [key: string]: string[] }) {
+// //for custom shapes
+//     sigma.canvas.nodes.border = function (node: any, context: any, settings: any) {
+//         var prefix = settings('prefix') || '';
+//
+//         context.fillStyle = node.color || settings('defaultNodeColor');
+//         context.beginPath();
+//         context.arc(
+//             node[prefix + 'x'],
+//             node[prefix + 'y'],
+//             node[prefix + 'size'],
+//             0,
+//             Math.PI * 2,
+//             true
+//         );
+//
+//         context.closePath();
+//         context.fill();
+//
+//         // Adding a border
+//         context.lineWidth = node.borderWidth || 2;
+//         context.strokeStyle = node.borderColor || '#fff';
+//         context.stroke();
+//     };
+// //Initialize sigma
+//     var sigmaInstance = new sigma({
+//         graph: {
+//             nodes: [],
+//             edges: []
+//         },
+//         renderer: {
+//             type: 'canvas',
+//             container: 'graph-container'
+//         },
+//         settings: {
+//             defaultNodeColor: '#000',
+//             defaultNodeType: 'border',
+//             defaultLabelColor: '#fff',
+//             labelThreshold: 100,
+//             defaultEdgeColor: '#fff',
+//             edgeColor: 'default'
+//         }
+//     });
+//
+//     var edgeID: number = 0;
+//
+//     for (var locations in Graph) {
+//         sigmaInstance.graph.addNode({
+//             // Main attributes:
+//             id: locations,
+//             label: locations,
+//             x: Math.random(),
+//             y: Math.random(),
+//             size: 17,
+//             borderColor: getRandomColor()
+//         });
+//     }
+//     for (var locations in Graph) {
+//         let adjacent = Graph[locations];
+//         for (var adj of adjacent) {
+//             sigmaInstance.graph.addEdge({
+//                 id: 'e' + (edgeID++).toString(),
+//                 source: locations,
+//                 target: adj,
+//                 size: 10
+//             })
+//         }
+//     }
+//
+//     var dragListener = sigma.plugins.dragNodes(
+//         sigmaInstance, sigmaInstance.renderers[0]);
+//
+//     dragListener.bind('startdrag', function (event: string) {
+//         console.log(event);
+//     });
+//     dragListener.bind('drag', function (event: string) {
+//         console.log(event);
+//     });
+//     dragListener.bind('drop', function (event: string) {
+//         console.log(event);
+//     });
+//     dragListener.bind('dragend', function (event: string) {
+//         console.log(event);
+//     });
+//
+//     sigmaInstance.refresh();
+//
+//     var config = {
+//         nodeMargin: 20,
+//         gridSize: 5,
+//     };
+//
+// //Configure the algorithm
+//     var listener = sigmaInstance.configNoverlap(config);
+//
+// //Bind all events:
+//     listener.bind('start stop interpolate', function (event: any) {
+//         console.log(event.type);
+//     });
+//
+// //Start the algorithm:
+//     sigmaInstance.startNoverlap();
+// }
 
 function InitializeVilillane(Graph: { [key: string]: string[] }) {
     for (let key in Graph) {
@@ -248,7 +394,8 @@ function InitializeVilillane(Graph: { [key: string]: string[] }) {
 // items
     var randomLocation: string[] = [];
     for (let i = 0; i < 4; i++) {
-        var index = getRandNumber(0, locations.length - 1);
+        //-2 because we don't want anything to be on the exit
+        var index = getRandNumber(0, locations.length - 2);
         randomLocation.push(locations[index]);
         locations.splice(index, 1);
     }
@@ -338,7 +485,8 @@ function InitializeVilillane(Graph: { [key: string]: string[] }) {
     for (let key in locationGraph) {
         let seq: any[] = [];
         seq.push(displayDescriptionAction("You enter the " + key + "."));
-        seq.push(addUserAction("Stay where you are.", () => {}));
+        seq.push(addUserAction("Stay where you are.", () => {
+        }));
         for (let adj of locationGraph[key]) {
             seq.push(addUserAction("Enter the " + adj + ".", () => setVariable(playerLocation, adj)));
         }
@@ -365,6 +513,7 @@ function InitializeVilillane(Graph: { [key: string]: string[] }) {
                 )
             ]
         ));
+
     var crewCard2BT = guard(() => getVariable(playerLocation) == getItemVariable(crewCard2, "currentLocation"),
         sequence([
                 displayDescriptionAction("You notice a crew card lying around."),
@@ -375,8 +524,23 @@ function InitializeVilillane(Graph: { [key: string]: string[] }) {
                 })
             ]
         ));
+
+    var ExitBT = guard(() => getVariable(playerLocation) == "Exit",
+        selector([
+            guard(() => getVariable(crewCardsCollected) >= 2,
+                sequence([
+                    displayDescriptionAction("You can now activate the exit and flee!"),
+                    addUserAction("Activate and get out!", () => {
+                        setVariable("endGame", "win");
+                        setVariable(playerLocation, "NA")
+                    })
+                ])),
+            displayDescriptionAction("You need 2 crew cards to activate the exit elevator system.")
+        ]));
+
     addUserInteractionTree(crewCard1BT);
     addUserInteractionTree(crewCard2BT);
+    addUserInteractionTree(ExitBT);
 
     var alienNearby = guard(() => areAdjacent(getVariable(playerLocation), getAgentVariable(alien, "currentLocation")),
         displayDescriptionAction("You hear a thumping sound. The alien is nearby."));
@@ -486,8 +650,8 @@ function InitializeVilillane(Graph: { [key: string]: string[] }) {
 
 //RENDERING-----
 //var displayPanel = {x: 500, y: 0};
-    var textPanel = {x: 400, y: 425};
-    var actionsPanel = {x: 420, y: 475};
+    var textPanel = {x: 400, y: 350};
+    var actionsPanel = {x: 420, y: 375};
 
     function render() {
         let alienLocation = getAgentVariable(alien, "currentLocation");

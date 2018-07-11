@@ -38,8 +38,8 @@ exports.__esModule = true;
 /* /// <reference path="scripting.ts"/> */
 var scripting_1 = require("./scripting");
 var util_1 = require("typescript-collections/dist/lib/util");
-var files = ["../data/university.csv",
-    "../data/LastNames.csv"];
+var files = ["../data/University/University.csv",
+    "../data/University/Prefix.csv"];
 var sigma = require('sigma');
 window.sigma = sigma;
 require('sigma/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
@@ -98,7 +98,6 @@ function readFiles() {
                 case 4:
                     for (i = 0; i < data[0].length; i++) {
                         rows = data[0][i].split(',');
-                        console.log(rows);
                         BuildingList[rows[0]] = scripting_1.getRandNumber(Number(rows[1]), Number(rows[2]));
                     }
                     PrefixList = data[1];
@@ -140,7 +139,7 @@ function connectNodes(location) {
             if ((typeof nodes[location[j]]) === 'undefined') {
                 nodes[location[j]] = [];
             }
-            if (Math.random() < 0.05) {
+            if (Math.random() < 0.06) {
                 nodes[location[i]].push(location[j]);
             }
         }
@@ -267,7 +266,8 @@ function InitializeVilillane(Graph) {
     // items
     var randomLocation = [];
     for (var i = 0; i < 4; i++) {
-        var index = scripting_1.getRandNumber(0, locations.length - 1);
+        //-2 because we don't want anything to be on the exit
+        var index = scripting_1.getRandNumber(0, locations.length - 2);
         randomLocation.push(locations[index]);
         locations.splice(index, 1);
     }
@@ -372,8 +372,19 @@ function InitializeVilillane(Graph) {
             scripting_1.setVariable(crewCardsCollected, scripting_1.getVariable(crewCardsCollected) + 1);
         })
     ]));
+    var ExitBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == "Exit"; }, scripting_1.selector([
+        scripting_1.guard(function () { return scripting_1.getVariable(crewCardsCollected) >= 2; }, scripting_1.sequence([
+            scripting_1.displayDescriptionAction("You can now activate the exit and flee!"),
+            scripting_1.addUserAction("Activate and get out!", function () {
+                scripting_1.setVariable("endGame", "win");
+                scripting_1.setVariable(playerLocation, "NA");
+            })
+        ])),
+        scripting_1.displayDescriptionAction("You need 2 crew cards to activate the exit elevator system.")
+    ]));
     scripting_1.addUserInteractionTree(crewCard1BT);
     scripting_1.addUserInteractionTree(crewCard2BT);
+    scripting_1.addUserInteractionTree(ExitBT);
     var alienNearby = scripting_1.guard(function () { return scripting_1.areAdjacent(scripting_1.getVariable(playerLocation), scripting_1.getAgentVariable(alien, "currentLocation")); }, scripting_1.displayDescriptionAction("You hear a thumping sound. The alien is nearby."));
     scripting_1.addUserInteractionTree(alienNearby);
     var gameOver = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == "NA"; }, scripting_1.selector([
@@ -456,8 +467,8 @@ function InitializeVilillane(Graph) {
     var userInteractionObject = scripting_1.getUserInteractionObject();
     //RENDERING-----
     //var displayPanel = {x: 500, y: 0};
-    var textPanel = { x: 400, y: 425 };
-    var actionsPanel = { x: 420, y: 475 };
+    var textPanel = { x: 400, y: 350 };
+    var actionsPanel = { x: 420, y: 375 };
     function render() {
         var alienLocation = scripting_1.getAgentVariable(alien, "currentLocation");
         var playerL = scripting_1.getVariable(playerLocation);

@@ -1,7 +1,7 @@
 {
   "files": [
     "src/scripting.ts",
-    "src/isolation.ts"
+    "src/university.ts"
   ],
   "compilerOptions": {
     /* Basic Options */
