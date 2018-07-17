@@ -11,7 +11,7 @@ var paths = {
 var watchedBrowserify = watchify(browserify({
     basedir: '.',
     debug: true,
-    entries: ['src/university.ts'],
+    entries: ['src/universityLayer.ts'],
     cache: {},
     packageCache: {}
 }).plugin(tsify));

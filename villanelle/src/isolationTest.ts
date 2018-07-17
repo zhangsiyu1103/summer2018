@@ -8,12 +8,12 @@ import {
 } from "./scripting";
 import {isUndefined} from "typescript-collections/dist/lib/util";
 
-let sigma = require('sigma');
+let sigma = require('linkurious');
 (<any>window).sigma = sigma;
 require('sigma/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
 require('sigma/plugins/sigma.plugins.animate/sigma.plugins.animate');
 require('sigma/plugins/sigma.layout.noverlap/sigma.layout.noverlap');
-require('sigma/src/middlewares/sigma.middlewares.rescale');
+require('linkurious/plugins/sigma.renderers.linkurious/canvas/sigma.canvas.nodes.def');
 
 // 1. Define State
 // locations
@@ -425,28 +425,28 @@ function getRandomColor() {
 }
 
 //for custom shapes
-sigma.canvas.nodes.border = function (node: any, context: any, settings: any) {
-    var prefix = settings('prefix') || '';
-
-    context.fillStyle = node.color || settings('defaultNodeColor');
-    context.beginPath();
-    context.arc(
-        node[prefix + 'x'],
-        node[prefix + 'y'],
-        node[prefix + 'size'],
-        0,
-        Math.PI * 2,
-        true
-    );
-
-    context.closePath();
-    context.fill();
-
-    // Adding a border
-    context.lineWidth = node.borderWidth || 2;
-    context.strokeStyle = node.borderColor || '#fff';
-    context.stroke();
-};
+// sigma.canvas.nodes.border = function (node: any, context: any, settings: any) {
+//     var prefix = settings('prefix') || '';
+//
+//     context.fillStyle = node.color || settings('defaultNodeColor');
+//     context.beginPath();
+//     context.arc(
+//         node[prefix + 'x'],
+//         node[prefix + 'y'],
+//         node[prefix + 'size'],
+//         0,
+//         Math.PI * 2,
+//         true
+//     );
+//
+//     context.closePath();
+//     context.fill();
+//
+//     // Adding a border
+//     context.lineWidth = node.borderWidth || 2;
+//     context.strokeStyle = node.borderColor || '#fff';
+//     context.stroke();
+// };
 
 //Initialize sigma
 var sigmaInstance = new sigma({
@@ -460,7 +460,6 @@ var sigmaInstance = new sigma({
     },
     settings: {
         defaultNodeColor: '#000',
-        defaultNodeType: 'border',
         defaultLabelColor: '#fff',
         labelThreshold: 100,
         defaultEdgeColor:'#fff',
@@ -478,7 +477,7 @@ for (var locations in locationGraph) {
         x: Math.random(),
         y: Math.random(),
         size: 17,
-        borderColor: getRandomColor()
+        //borderColor: getRandomColor()
     });
 }
 for (var locations in locationGraph) {

@@ -1,7 +1,7 @@
 {
   "files": [
     "src/scripting.ts",
-    "src/university.ts"
+    "src/universityLayer.ts"
   ],
   "compilerOptions": {
     /* Basic Options */

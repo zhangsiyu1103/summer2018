@@ -270,7 +270,7 @@ function visualize(Tree: cfgTrees) {
     for (var val of Tree.getAllValues()) {
         bool[val] = false;
     }
-    console.log(expandList);
+
     var edgeID: number = 0;
     var InitialGraph = expandGraph[Tree.getValue()];
 

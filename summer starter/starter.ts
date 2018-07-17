@@ -1,10 +1,17 @@
 //function for random color
 //Taken from https://stackoverflow.com/questions/1484506/random-color-generator
-let sigma = require('sigma');
+var sigma:any = require('linkurious');
 (<any>window).sigma = sigma;
-require('sigma/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
-require('sigma/plugins/sigma.plugins.animate/sigma.plugins.animate');
-require('sigma/plugins/sigma.layout.noverlap/sigma.layout.noverlap');
+// require('sigma/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
+// require('sigma/plugins/sigma.plugins.animate/sigma.plugins.animate');
+// require('sigma/plugins/sigma.layout.noverlap/sigma.layout.noverlap');
+//require('sigma/build/plugins/sigma.renderers.customShapes.min');
+require('linkurious/dist/sigma.min');
+require('linkurious/dist/plugins.min');
+require('linkurious/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
+require('linkurious/plugins/sigma.plugins.animate/sigma.plugins.animate');
+require('linkurious/plugins/sigma.layouts.noverlap/sigma.layouts.noverlap');
+
 
 
 function getRandomColor() {
@@ -71,7 +78,6 @@ function generate(n: number){
         edges.push([rest[i], rest[i+1]]);
     }
 
-    // var sigmaInstance = new sig
 //function for random color
 //Taken from https://stackoverflow.com/questions/1484506/random-color-generator
     sigma.canvas.nodes.border = function (node:any, context:any, settings:any) {
@@ -99,7 +105,7 @@ function generate(n: number){
 
     var sigmaInstance = new sigma({
         settings: {
-            defaultNodeType: 'border',
+            defaultNodeType: "border",
         }
     });
     sigmaInstance.addRenderer({
@@ -119,6 +125,7 @@ function generate(n: number){
             borderColor: getRandomColor()
         })
     }
+    //sigmaInstance.graph.nodes('n1').type='diamond';
 
     //add edge
     for(i = 0; i < edges.length; i++){
@@ -132,6 +139,7 @@ function generate(n: number){
         });
 
     }
+    //CustomShapes.init(sigmaInstance);
 
     sigmaInstance.refresh();
 
