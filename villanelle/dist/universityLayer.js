@@ -7,51 +7,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-exports.__esModule = true;
-var scripting_1 = require("./scripting");
-var util_1 = require("typescript-collections/dist/lib/util");
-//require all the library needed
-var sigma = require('linkurious');
+Object.defineProperty(exports, "__esModule", { value: true });
+const scripting_1 = require("./scripting");
+const util_1 = require("typescript-collections/dist/lib/util");
+let sigma = require('linkurious');
 window.sigma = sigma;
 require('linkurious/plugins/sigma.plugins.dragNodes/sigma.plugins.dragNodes');
 require('linkurious/plugins/sigma.plugins.animate/sigma.plugins.animate');
 require('linkurious/plugins/sigma.layouts.noverlap/sigma.layouts.noverlap');
 require('linkurious/plugins/sigma.renderers.linkurious/canvas/sigma.canvas.nodes.def');
-require('linkurious/plugins/sigma.plugins.tooltips/sigma.plugins.tooltips');
-require('linkurious/plugins/sigma.plugins.design/sigma.plugins.design');
-//File names
 var filePrefix = "../data/university/";
-var files = ["cfgGramma.csv", "Prefix.csv", "NPCconstraint.txt"];
-//A structure for hierarchical generation
-var cfgTrees = /** @class */ (function () {
-    function cfgTrees(name, rule, prefix, prevName) {
+let files = ["cfgGramma.csv", "Prefix.csv", "NPCconstraint.txt"];
+class cfgTrees {
+    constructor(name, rule, prefix, prevName) {
         var cleanName;
         var idpre = '';
         var labelpre = '';
@@ -59,9 +27,6 @@ var cfgTrees = /** @class */ (function () {
         this.idLabel = {};
         this.assortedDict = {};
         this.items = null;
-        //* means the names remain unchanged
-        //$ means the names has a prefix as previous name
-        //# means the location is expandable
         if (name.endsWith('*')) {
             cleanName = name.substring(0, name.length - 1);
         }
@@ -80,8 +45,7 @@ var cfgTrees = /** @class */ (function () {
                 this.items = [];
                 cleanName = cleanName.substring(2, cleanName.length);
                 var rawitems = processRand(rule[cleanName]);
-                for (var _i = 0, rawitems_1 = rawitems; _i < rawitems_1.length; _i++) {
-                    var item = rawitems_1[_i];
+                for (var item of rawitems) {
                     this.items.push(prevName + " " + item);
                     this.idLabel[prevName + " " + item] = item;
                 }
@@ -90,8 +54,7 @@ var cfgTrees = /** @class */ (function () {
                 cleanName = cleanName.substring(1, cleanName.length);
             }
             var children = processRand(rule[cleanName]);
-            for (var _a = 0, children_1 = children; _a < children_1.length; _a++) {
-                var value = children_1[_a];
+            for (let value of children) {
                 var newBranch = new cfgTrees(value, rule, prefix, idpre + cleanName);
                 combine(this.idLabel, newBranch.idLabel);
                 combine(this.assortedDict, newBranch.assortedDict);
@@ -102,8 +65,7 @@ var cfgTrees = /** @class */ (function () {
             cleanName = cleanName.substring(1, cleanName.length);
             this.items = [];
             var rawitems = processRand(rule[cleanName]);
-            for (var _b = 0, rawitems_2 = rawitems; _b < rawitems_2.length; _b++) {
-                var item = rawitems_2[_b];
+            for (var item of rawitems) {
                 this.items.push(prevName + " " + item);
                 this.idLabel[prevName + " " + item] = item;
             }
@@ -115,99 +77,104 @@ var cfgTrees = /** @class */ (function () {
         }
         this.assortedDict[cleanName.toLowerCase()].push(this.val);
     }
-    cfgTrees.prototype.getValue = function () {
+    getValue() {
         return this.val;
-    };
-    cfgTrees.prototype.getBranches = function () {
+    }
+    getBranches() {
         return this.branches;
-    };
-    cfgTrees.prototype.getIdLabelPair = function () {
+    }
+    isLeaf() {
+        return (this.branches == null);
+    }
+    getIdLabelPair() {
         return this.idLabel;
-    };
-    // return the children's location names
-    cfgTrees.prototype.getBranchValues = function () {
-        var ret = [];
+    }
+    getBranchValues() {
+        let ret = [];
         if (this.branches != null) {
-            for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
-                var value = _a[_i];
+            for (let value of this.branches) {
                 ret.push(value.val);
             }
         }
         return ret;
-    };
-    //return a dict for expandable locations and their children
-    cfgTrees.prototype.getExpandList = function () {
-        var expandList = {};
+    }
+    getExpandList() {
+        let expandList = {};
         if (this.branches != null) {
             expandList[this.val] = this.getBranchValues();
-            for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
-                var tree = _a[_i];
+            for (let tree of this.branches) {
                 combine(expandList, tree.getExpandList());
             }
         }
         return expandList;
-    };
-    //return a pair of each location and their parents' location
-    cfgTrees.prototype.getPrevnameList = function () {
-        var PrevnameList = {};
-        for (var _i = 0, _a = this.getBranchValues(); _i < _a.length; _i++) {
-            var name_1 = _a[_i];
-            PrevnameList[name_1] = this.val;
+    }
+    getPrevnameList() {
+        let PrevnameList = {};
+        for (var name of this.getBranchValues()) {
+            PrevnameList[name] = this.val;
         }
         if (this.branches != null) {
-            for (var _b = 0, _c = this.branches; _b < _c.length; _b++) {
-                var tree = _c[_b];
+            for (let tree of this.branches) {
                 combine(PrevnameList, tree.getPrevnameList());
             }
         }
         return PrevnameList;
-    };
-    //return a dict for assorted types
-    cfgTrees.prototype.getAssortedDict = function () {
+    }
+    //This method ignores the first value of the tree
+    getAllValues() {
+        var ret = [];
+        ret = ret.concat(this.getBranchValues());
+        if (this.branches != null) {
+            for (let tree of this.branches) {
+                ret = ret.concat(tree.getBranchValues());
+            }
+        }
+        return ret;
+    }
+    getAssortedDict() {
         return this.assortedDict;
-    };
-    //return a dict for the location and items corresponding to each location.
-    cfgTrees.prototype.getItemsList = function () {
+    }
+    getItemsList() {
         var ret = {};
         if (this.items != null) {
             ret[this.val] = this.items;
         }
         if (this.branches != null) {
-            for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
-                var tree = _a[_i];
+            for (let tree of this.branches) {
                 combine(ret, tree.getItemsList());
             }
         }
         return ret;
-    };
-    //return a list of all locations in the map
-    cfgTrees.prototype.getAlllocations = function () {
-        var ret = [];
+    }
+    getAlllocations() {
+        let ret = [];
         ret.push(this.getValue());
         if (this.branches != null) {
-            for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
-                var child = _a[_i];
+            for (var child of this.branches) {
                 ret = ret.concat(child.getAlllocations());
             }
         }
         return ret;
-    };
-    return cfgTrees;
-}());
-//A structure for NPC constraint
-var constrain = /** @class */ (function () {
-    function constrain(data) {
+    }
+    print() {
+        if (this.branches != null) {
+            console.log(this.branches);
+            for (let value of this.branches) {
+                value.print();
+            }
+        }
+    }
+}
+class constrain {
+    constructor(data) {
         this.item = [];
         this.location = [];
         this.agent = [];
         this.locationItem = {};
-        //read the value inside of a parenthesis.
         var regExp = /\(([^)]+)\)/;
-        for (var _i = 0, data_1 = data; _i < data_1.length; _i++) {
-            var val = data_1[_i];
+        for (let val of data) {
             var parentheses = val.match(regExp)[1];
             var input = parentheses.split(',');
-            //identify the motions of each goals.
             if (val.toLowerCase().startsWith('pickup')) {
                 for (var i = 0; i < input.length; i++) {
                     while (input[i].startsWith(' ')) {
@@ -239,12 +206,9 @@ var constrain = /** @class */ (function () {
             }
         }
     }
-    return constrain;
-}());
-//A function for combining to dictionary
+}
 function combine(dict1, dict2) {
-    for (var _i = 0, _a = Object.keys(dict2); _i < _a.length; _i++) {
-        var val = _a[_i];
+    for (var val of Object.keys(dict2)) {
         if (util_1.isUndefined(dict1[val])) {
             dict1[val] = dict2[val];
         }
@@ -254,116 +218,86 @@ function combine(dict1, dict2) {
     }
     return dict1;
 }
-//A function for return and delete a random number from a list
 function retRand(list) {
     var index = scripting_1.getRandNumber(0, list.length - 1);
     var ret = list[index];
     list.splice(index, 1);
     return ret;
 }
-//Reading the files
 function readFiles() {
-    return __awaiter(this, void 0, void 0, function () {
-        var data, _loop_1, _i, files_1, file;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    data = {};
-                    _loop_1 = function (file) {
-                        var value;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4 /*yield*/, new Promise(function (resolve, reject) {
-                                        var req = new XMLHttpRequest();
-                                        req.onreadystatechange = function () {
-                                            if (this.readyState == 4) {
-                                                if (this.status == 200) {
-                                                    var lines = this.responseText.split(/\n|\r\n/);
-                                                    data[file] = lines;
-                                                    resolve(lines);
-                                                }
-                                                else {
-                                                    reject(Error(req.statusText));
-                                                }
-                                            }
-                                        };
-                                        req.open("GET", filePrefix + file, true);
-                                        req.responseType = "text";
-                                        req.send(null);
-                                    })];
-                                case 1:
-                                    value = _a.sent();
-                                    return [2 /*return*/];
-                            }
-                        });
-                    };
-                    _i = 0, files_1 = files;
-                    _a.label = 1;
-                case 1:
-                    if (!(_i < files_1.length)) return [3 /*break*/, 4];
-                    file = files_1[_i];
-                    return [5 /*yield**/, _loop_1(file)];
-                case 2:
-                    _a.sent();
-                    _a.label = 3;
-                case 3:
-                    _i++;
-                    return [3 /*break*/, 1];
-                case 4: return [2 /*return*/, Promise.resolve(data)];
-            }
-        });
+    return __awaiter(this, void 0, void 0, function* () {
+        let data = {};
+        for (var file of files) {
+            let value = yield new Promise(function (resolve, reject) {
+                var req = new XMLHttpRequest();
+                req.onreadystatechange = function () {
+                    if (this.readyState == 4) {
+                        if (this.status == 200) {
+                            var lines = this.responseText.split(/\n|\r\n/);
+                            data[file] = lines;
+                            resolve(lines);
+                        }
+                        else {
+                            reject(Error(req.statusText));
+                        }
+                    }
+                };
+                req.open("GET", filePrefix + file, true);
+                req.responseType = "text";
+                req.send(null);
+            });
+        }
+        return Promise.resolve(data);
     });
 }
-//call all the functions needed
 readFiles().then(function (value) {
+    console.log(value);
     var tree = generateTree(value);
     var condition = processCondition(value);
+    //var constrain:maps
     InitializeVilillane(tree, condition);
 });
-//From the raw data to generate the context-free grammar trees for the map
 function generateTree(data) {
-    var Prefix = data['Prefix.csv'];
-    var newRule = {};
-    var rawRule = data['cfgGramma.csv'];
-    for (var i = 0; i < rawRule.length; i++) {
-        var rows = rawRule[i].split(',');
+    let Prefix = data['Prefix.csv'];
+    let newRule = {};
+    let rawRule = data['cfgGramma.csv'];
+    for (let i = 0; i < rawRule.length; i++) {
+        let rows = rawRule[i].split(',');
         newRule[rows[0]] = rows[1];
     }
-    return new cfgTrees('#University', newRule, Prefix, '');
+    let newTree = new cfgTrees('#University', newRule, Prefix, '');
+    return newTree;
 }
-//From the raw data to generate the constraints
 function processCondition(data) {
-    return new constrain(data["NPCconstraint.txt"]);
+    var condition = new constrain(data["NPCconstraint.txt"]);
+    return condition;
 }
-//For each elements of context free grammar, generate a random number of certain type
-// of buildings according to the minimum and maximum
 function processRand(data) {
     var children = data.split(';');
     var result = [];
-    for (var j = 0; j < children.length; j++) {
-        var elements = children[j].split('.');
-        var num = scripting_1.getRandNumber(Number(elements[1]), Number(elements[2]));
-        for (var k = 0; k < num; k++) {
+    for (let j = 0; j < children.length; j++) {
+        let elements = children[j].split('.');
+        let num = scripting_1.getRandNumber(Number(elements[1]), Number(elements[2]));
+        for (let k = 0; k < num; k++) {
             result.push(elements[0]);
         }
     }
     return result;
 }
-//Randomly generate a connected graphs from a list of nodes
 function connectNodes(location) {
-    var nodes = {};
-    var visited = {};
-    for (var i = 0; i < location.length; i++) {
+    let nodes = {};
+    let visited = {};
+    for (let i = 0; i < location.length; i++) {
         visited[location[i]] = false;
     }
-    var stack = [];
-    var rest = [];
+    let stack = [];
+    let rest = [];
     //randomly generate a graph
-    for (var i = 0; i < location.length; i++) {
+    for (let i = 0; i < location.length; i++) {
         if (util_1.isUndefined(nodes[location[i]])) {
             nodes[location[i]] = [];
         }
-        for (var j = i + 1; j < location.length; j++) {
+        for (let j = i + 1; j < location.length; j++) {
             if (util_1.isUndefined(nodes[location[j]])) {
                 nodes[location[j]] = [];
             }
@@ -373,9 +307,9 @@ function connectNodes(location) {
         }
     }
     //making sure it is connected
-    for (var i = 0; i < location.length; i++) {
+    for (let i = 0; i < location.length; i++) {
         if (visited[location[i]] == false) {
-            var item = location[i];
+            let item = location[i];
             stack.push(location[i]);
             while (stack.length > 0) {
                 var cur = stack.pop();
@@ -385,8 +319,7 @@ function connectNodes(location) {
                         if (Math.random() < 0.3) {
                             item = cur;
                         }
-                        for (var _i = 0, _a = nodes[cur]; _i < _a.length; _i++) {
-                            var val = _a[_i];
+                        for (let val of nodes[cur]) {
                             stack.push(val);
                         }
                     }
@@ -395,23 +328,17 @@ function connectNodes(location) {
             rest.push(item);
         }
     }
-    for (var i = 0; i < rest.length - 1; i++) {
+    for (let i = 0; i < rest.length - 1; i++) {
         nodes[rest[i]].push(rest[i + 1]);
     }
     return nodes;
 }
 function InitializeVilillane(Tree, condition) {
-    //get assortDict for NPC constraint
     var assortDict = Tree.getAssortedDict();
-    //get itemList for display items
     var itemsList = Tree.getItemsList();
-    //get expandList to generate a expand graph
     var expandList = Tree.getExpandList();
-    //get all initialized locations
     var originlocations = Tree.getAlllocations();
-    //get the initialized id pair
     var idLabelPair = Tree.getIdLabelPair();
-    //get the initialized prevname pairs
     var PrevnameList = Tree.getPrevnameList();
     // agents
     var alien = scripting_1.addAgent("Alien");
@@ -422,23 +349,18 @@ function InitializeVilillane(Tree, condition) {
     var conditionAgent = condition.agent;
     var conditionlocation = condition.location;
     var conditionlocationItem = condition.locationItem;
-    //Apply the constraint to change the initialized data.
-    for (var _i = 0, conditionAgent_1 = conditionAgent; _i < conditionAgent_1.length; _i++) {
-        var agent = conditionAgent_1[_i];
+    for (let agent of conditionAgent) {
         if (!scripting_1.agents.includes(agent)) {
             scripting_1.addAgent(agent);
         }
     }
-    for (var _a = 0, conditionlocation_1 = conditionlocation; _a < conditionlocation_1.length; _a++) {
-        var loc = conditionlocation_1[_a];
+    for (let loc of conditionlocation) {
         if (!Object.keys(assortDict).includes(loc.toLowerCase()) && !originlocations.includes(loc)) {
             expandList[Tree.getValue()].push(loc);
-            PrevnameList[loc] = Tree.getValue();
             idLabelPair[loc] = loc;
         }
     }
-    for (var _b = 0, _c = Object.keys(conditionlocationItem); _b < _c.length; _b++) {
-        var loc = _c[_b];
+    for (let loc of Object.keys(conditionlocationItem)) {
         if (!Object.keys(assortDict).includes(loc.toLowerCase()) && !originlocations.includes(loc)) {
             itemsList[loc] = conditionlocationItem[loc];
         }
@@ -446,7 +368,9 @@ function InitializeVilillane(Tree, condition) {
             if (util_1.isUndefined(itemsList[assortDict[loc][0]])) {
                 itemsList[assortDict[loc][0]] = [];
             }
-            itemsList[assortDict[loc][0]] = itemsList[assortDict[loc][0]].concat(conditionlocationItem[loc]);
+            else {
+                itemsList[assortDict[loc][0]] = itemsList[assortDict[loc][0]].concat(conditionlocationItem[loc]);
+            }
         }
         else if (originlocations.includes(loc)) {
             if (util_1.isUndefined(itemsList[loc])) {
@@ -457,21 +381,20 @@ function InitializeVilillane(Tree, condition) {
             }
         }
     }
-    for (var _d = 0, _e = Object.keys(itemsList); _d < _e.length; _d++) {
-        var key = _e[_d];
+    for (var key of Object.keys(itemsList)) {
         for (var i = 0; i < itemsList[key].length; i++) {
             scripting_1.addItem(itemsList[key][i]);
             scripting_1.setItemVariable(itemsList[key][i], "currentLocation", key);
         }
     }
-    //Generate the expandGraph from the modified expandList
-    //For each expandable location, the dictionary contains a randomly connected graph for all its children
-    var expandGraph = {};
-    for (var _f = 0, _g = Object.keys(expandList); _f < _g.length; _f++) {
-        var keys = _g[_f];
+    scripting_1.setItemVariable(crewCard1, "currentLocation", retRand(locations));
+    scripting_1.setItemVariable(crewCard2, "currentLocation", retRand(locations));
+    var itemDisplay = scripting_1.setVariable("itemDisplay", false);
+    let expandGraph = {};
+    for (var keys of Object.keys(expandList)) {
         expandGraph[keys] = connectNodes(expandList[keys]);
     }
-    console.log(itemsList);
+    //var itemindex:number = 0;
     //Add locations to villanelle
     function addLocationGraph(graph) {
         for (var key in graph) {
@@ -485,10 +408,6 @@ function InitializeVilillane(Tree, condition) {
         addLocationGraph(expandGraph[key]);
     }
     var locations = Object.keys(scripting_1.locationGraph);
-    //items variable
-    scripting_1.setItemVariable(crewCard1, "currentLocation", retRand(locations));
-    scripting_1.setItemVariable(crewCard2, "currentLocation", retRand(locations));
-    var itemDisplay = scripting_1.setVariable("itemDisplay", false);
     // variables
     //alien
     scripting_1.setAgentVariable(alien, "currentLocation", retRand(locations));
@@ -514,44 +433,40 @@ function InitializeVilillane(Tree, condition) {
     //     itemsList[getVariable(playerLocation)].push("key");
     //Recover location array
     locations = Object.keys(scripting_1.locationGraph);
-    var setRandNumber = scripting_1.action(function () { return true; }, function () {
+    let setRandNumber = scripting_1.action(() => true, () => {
         scripting_1.setVariable("randNumber", scripting_1.getRandNumber(1, locations.length));
     }, 0);
-    //Initialize behavior tree for aliens
     var BTlist = [];
-    var id = 0;
-    var _loop_2 = function (i) {
+    let id = 0;
+    for (let i = 0; i < locations.length; i++) {
         //console.log(locations[i]);
-        var actions = scripting_1.action(function () { return scripting_1.getVariable("randNumber") == i + 1; }, function () { return scripting_1.setVariable("destination", locations[i]); }, 0);
+        let actions = scripting_1.action(() => scripting_1.getVariable("randNumber") == i + 1, () => scripting_1.setVariable("destination", locations[i]), 0);
         BTlist.push(actions);
-    };
-    for (var i = 0; i < locations.length; i++) {
-        _loop_2(i);
     }
-    var atDestination = function () { return scripting_1.getVariable("destination") == scripting_1.getAgentVariable(alien, "currentLocation"); };
-    var setDestinationPrecond = function () { return scripting_1.isVariableNotSet("destination") || atDestination(); };
+    let atDestination = () => scripting_1.getVariable("destination") == scripting_1.getAgentVariable(alien, "currentLocation");
+    let setDestinationPrecond = () => scripting_1.isVariableNotSet("destination") || atDestination();
     // create behavior trees
-    var setNextDestination = scripting_1.sequence([
+    let setNextDestination = scripting_1.sequence([
         setRandNumber,
         scripting_1.selector(BTlist),
     ]);
-    var gotoNextLocation = scripting_1.action(function () { return true; }, function () {
+    let gotoNextLocation = scripting_1.action(() => true, () => {
         scripting_1.setAgentVariable(alien, "currentLocation", scripting_1.getNextLocation(scripting_1.getAgentVariable(alien, "currentLocation"), scripting_1.getVariable("destination")));
         console.log("Alien is at: " + scripting_1.getAgentVariable(alien, "currentLocation"));
     }, 0);
-    var eatPlayer = scripting_1.action(function () { return scripting_1.getAgentVariable(alien, "currentLocation") == scripting_1.getVariable(playerLocation); }, function () {
+    let eatPlayer = scripting_1.action(() => scripting_1.getAgentVariable(alien, "currentLocation") == scripting_1.getVariable(playerLocation), () => {
         scripting_1.setVariable("endGame", "lose");
         scripting_1.setVariable(playerLocation, "NA");
     }, 0);
-    var search = scripting_1.sequence([
+    let search = scripting_1.sequence([
         scripting_1.selector([
             scripting_1.guard(setDestinationPrecond, setNextDestination),
-            scripting_1.action(function () { return true; }, function () {
+            scripting_1.action(() => true, () => {
             }, 0)
         ]),
         gotoNextLocation,
     ]);
-    var alienBT = scripting_1.selector([
+    let alienBT = scripting_1.selector([
         eatPlayer,
         scripting_1.sequence([
             search, eatPlayer
@@ -559,47 +474,36 @@ function InitializeVilillane(Tree, condition) {
     ]);
     //attach behaviour trees to agents
     scripting_1.attachTreeToAgent(alien, alienBT);
-    var _loop_3 = function (key) {
-        var seq = [];
+    // 3. Construct story
+    // create user actions
+    for (let key in scripting_1.locationGraph) {
+        let seq = [];
         seq.push(scripting_1.displayDescriptionAction("You enter the " + idLabelPair[key] + "."));
-        seq.push(scripting_1.addUserAction("Stay where you are.", function () {
+        seq.push(scripting_1.addUserAction("Stay where you are.", () => {
         }));
-        //Check whether it's in a lower layer
         if (Object.keys(scripting_1.locationGraph).includes(PrevnameList[key])) {
-            seq.push(scripting_1.addUserAction("Go outside to " + idLabelPair[PrevnameList[key]] + ".", function () {
+            seq.push(scripting_1.addUserAction("Go outside to " + idLabelPair[PrevnameList[key]] + ".", () => {
                 scripting_1.setVariable(playerLocation, PrevnameList[key]);
             }));
         }
-        //Check whether it's has a children
         if (Object.keys(expandList).includes(key)) {
-            seq.push(scripting_1.addUserAction("Go inside " + idLabelPair[key] + " to enter " + idLabelPair[expandList[key][0]] + ".", function () { return scripting_1.setVariable(playerLocation, expandList[key][0]); }));
+            seq.push(scripting_1.addUserAction("Go inside " + idLabelPair[key] + " to enter " + idLabelPair[expandList[key][0]] + ".", () => scripting_1.setVariable(playerLocation, expandList[key][0])));
         }
         var graph = completeGraph(expandGraph[PrevnameList[key]]);
-        var _loop_5 = function (adj) {
-            seq.push(scripting_1.addUserAction("Enter the " + idLabelPair[adj] + ".", function () { return scripting_1.setVariable(playerLocation, adj); }));
-        };
-        for (var _i = 0, _a = graph[key]; _i < _a.length; _i++) {
-            var adj = _a[_i];
-            _loop_5(adj);
+        for (let adj of graph[key]) {
+            seq.push(scripting_1.addUserAction("Enter the " + idLabelPair[adj] + ".", () => scripting_1.setVariable(playerLocation, adj)));
         }
-        var StateBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == key && scripting_1.getVariable(itemDisplay) == false; }, scripting_1.sequence(seq));
+        var StateBT = scripting_1.guard(() => scripting_1.getVariable(playerLocation) == key && scripting_1.getVariable(itemDisplay) == false, scripting_1.sequence(seq));
         scripting_1.addUserInteractionTree(StateBT);
-    };
-    // 3. Construct story
-    // create user actions from the graphs
-    for (var key in scripting_1.locationGraph) {
-        _loop_3(key);
     }
-    //Behavior tree for items
-    var itemBT = scripting_1.guard(function () { return !util_1.isUndefined(itemsList[scripting_1.getVariable(playerLocation)]) && itemsList[scripting_1.getVariable(playerLocation)].length != 0 && scripting_1.getVariable(itemDisplay) == false; }, scripting_1.sequence([
+    var itemBT = scripting_1.guard(() => !util_1.isUndefined(itemsList[scripting_1.getVariable(playerLocation)]) && itemsList[scripting_1.getVariable(playerLocation)].length != 0 && scripting_1.getVariable(itemDisplay) == false, scripting_1.sequence([
         scripting_1.displayDescriptionAction("You notice items lying around."),
-        scripting_1.addUserAction("show all the items", function () { return scripting_1.setVariable(itemDisplay, true); })
+        scripting_1.addUserAction("show all the items", () => scripting_1.setVariable(itemDisplay, true))
     ]));
-    //attach the bt to thr tree
     scripting_1.addUserInteractionTree(itemBT);
-    var _loop_4 = function (i) {
-        var showitemBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(scripting_1.items[i], "currentLocation") && scripting_1.getVariable(itemDisplay) == true; }, scripting_1.sequence([
-            scripting_1.addUserAction("Pick up the " + scripting_1.items[i] + ".", function () {
+    for (let i = 0; i < scripting_1.items.length; i++) {
+        var showitemBT = scripting_1.guard(() => scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(scripting_1.items[i], "currentLocation") && scripting_1.getVariable(itemDisplay) == true, scripting_1.sequence([
+            scripting_1.addUserAction("Pick up the " + scripting_1.items[i] + ".", () => {
                 scripting_1.setVariable(itemDisplay, false);
                 var curInv = scripting_1.getVariable("inventory");
                 curInv.push(scripting_1.items[i]);
@@ -610,38 +514,32 @@ function InitializeVilillane(Tree, condition) {
             })
         ]));
         scripting_1.addUserInteractionTree(showitemBT);
-    };
-    //Create behavior trees for every items
-    for (var i = 0; i < scripting_1.items.length; i++) {
-        _loop_4(i);
     }
-    //crewcard BT
-    var crewCard1BT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(crewCard1, "currentLocation"); }, scripting_1.sequence([
+    var crewCard1BT = scripting_1.guard(() => scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(crewCard1, "currentLocation"), scripting_1.sequence([
         scripting_1.displayDescriptionAction("You notice a crew card lying around."),
         scripting_1.addUserActionTree("Pick up the crew card", scripting_1.sequence([
-            scripting_1.action(function () { return true; }, function () {
+            scripting_1.action(() => true, () => {
                 scripting_1.displayActionEffectText("You pick up the crew card.");
                 scripting_1.setItemVariable(crewCard1, "currentLocation", "player");
                 scripting_1.setVariable(crewCardsCollected, scripting_1.getVariable(crewCardsCollected) + 1);
             }, 0),
-            scripting_1.action(function () { return true; }, function () {
+            scripting_1.action(() => true, () => {
                 scripting_1.displayActionEffectText("Wow you know how to pick up things.");
             }, 0)
         ]))
     ]));
-    var crewCard2BT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(crewCard2, "currentLocation"); }, scripting_1.sequence([
+    var crewCard2BT = scripting_1.guard(() => scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(crewCard2, "currentLocation"), scripting_1.sequence([
         scripting_1.displayDescriptionAction("You notice a crew card lying around."),
-        scripting_1.addUserAction("Pick up the crew card", function () {
+        scripting_1.addUserAction("Pick up the crew card", () => {
             scripting_1.displayActionEffectText("You pick up the crew card.");
             scripting_1.setItemVariable(crewCard2, "currentLocation", "player");
             scripting_1.setVariable(crewCardsCollected, scripting_1.getVariable(crewCardsCollected) + 1);
         })
     ]));
-    //A BT for the exit
-    var ExitBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == "Exit"; }, scripting_1.selector([
-        scripting_1.guard(function () { return scripting_1.getVariable(crewCardsCollected) >= 2; }, scripting_1.sequence([
+    var ExitBT = scripting_1.guard(() => scripting_1.getVariable(playerLocation) == "Exit", scripting_1.selector([
+        scripting_1.guard(() => scripting_1.getVariable(crewCardsCollected) >= 2, scripting_1.sequence([
             scripting_1.displayDescriptionAction("You can now activate the exit and flee!"),
-            scripting_1.addUserAction("Activate and get out!", function () {
+            scripting_1.addUserAction("Activate and get out!", () => {
                 scripting_1.setVariable("endGame", "win");
                 scripting_1.setVariable(playerLocation, "NA");
             })
@@ -651,14 +549,14 @@ function InitializeVilillane(Tree, condition) {
     scripting_1.addUserInteractionTree(crewCard1BT);
     scripting_1.addUserInteractionTree(crewCard2BT);
     scripting_1.addUserInteractionTree(ExitBT);
-    var alienNearby = scripting_1.guard(function () { return scripting_1.areAdjacent(scripting_1.getVariable(playerLocation), scripting_1.getAgentVariable(alien, "currentLocation")); }, scripting_1.displayDescriptionAction("You hear a thumping sound. The alien is nearby."));
+    var alienNearby = scripting_1.guard(() => scripting_1.areAdjacent(scripting_1.getVariable(playerLocation), scripting_1.getAgentVariable(alien, "currentLocation")), scripting_1.displayDescriptionAction("You hear a thumping sound. The alien is nearby."));
     scripting_1.addUserInteractionTree(alienNearby);
-    var gameOver = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == "NA"; }, scripting_1.selector([
-        scripting_1.guard(function () { return scripting_1.getVariable("endGame") == "win"; }, scripting_1.displayDescriptionAction("You have managed to escape!")),
-        scripting_1.guard(function () { return scripting_1.getVariable("endGame") == "lose"; }, scripting_1.displayDescriptionAction("The creature grabs you before you can react! You struggle for a bit before realising it's all over.."))
+    var gameOver = scripting_1.guard(() => scripting_1.getVariable(playerLocation) == "NA", scripting_1.selector([
+        scripting_1.guard(() => scripting_1.getVariable("endGame") == "win", scripting_1.displayDescriptionAction("You have managed to escape!")),
+        scripting_1.guard(() => scripting_1.getVariable("endGame") == "lose", scripting_1.displayDescriptionAction("The creature grabs you before you can react! You struggle for a bit before realising it's all over.."))
     ]));
     scripting_1.addUserInteractionTree(gameOver);
-    //Initialize sigma for player and alien
+    //Initialize sigma
     var sigmaPlayer = new sigma({
         graph: {
             nodes: [],
@@ -680,16 +578,6 @@ function InitializeVilillane(Tree, condition) {
             sideMargin: 15
         }
     });
-    // var tooltipPlayer = sigma.plugins.tooltips(
-    //     sigmaPlayer,
-    //     sigmaPlayer.renderers[0],
-    //     {
-    //         node: [{
-    //             show: 'clickNode',
-    //             template: 'Hello node!'
-    //         }]
-    //     }
-    // );
     var sigmaAlien = new sigma({
         graph: {
             nodes: [],
@@ -710,28 +598,13 @@ function InitializeVilillane(Tree, condition) {
             sideMargin: 15
         }
     });
-    // var tooltipAlien = sigma.plugins.tooltips(
-    //     sigmaAlien,
-    //     sigmaAlien.renderers[0],
-    //     {
-    //         node: [{
-    //             show: 'clickNode',
-    //             template: 'Hello node!'
-    //         }]
-    //     }
-    // );
-    //A unique ID for each edge.
     var edgeID = 0;
-    //Clear the graph.
     function clear(sigma) {
         var nodes = sigma.graph.nodes();
-        for (var _i = 0, nodes_1 = nodes; _i < nodes_1.length; _i++) {
-            var node = nodes_1[_i];
+        for (var node of nodes) {
             sigma.graph.dropNode(node.id);
         }
     }
-    //The graph generate by connect-node is one direction
-    //This function make it two-direction
     function completeGraph(graph) {
         var retGraph = {};
         for (var key in graph) {
@@ -739,8 +612,7 @@ function InitializeVilillane(Tree, condition) {
                 retGraph[key] = [];
             }
             retGraph[key] = retGraph[key].concat(graph[key]);
-            for (var _i = 0, _a = graph[key]; _i < _a.length; _i++) {
-                var loc = _a[_i];
+            for (var loc of graph[key]) {
                 if (util_1.isUndefined(retGraph[loc])) {
                     retGraph[loc] = [];
                 }
@@ -749,7 +621,6 @@ function InitializeVilillane(Tree, condition) {
         }
         return retGraph;
     }
-    //Show the adjacent node of the input node
     function showAround(input, sigmaInstance) {
         var graph = completeGraph(expandGraph[PrevnameList[input]]);
         var adjacent = graph[input];
@@ -761,7 +632,7 @@ function InitializeVilillane(Tree, condition) {
                 label: idLabelPair[input],
                 x: 0,
                 y: 0,
-                size: 15
+                size: 15,
             });
         }
         for (var i = 0; i < numberLayer; i++) {
@@ -772,7 +643,7 @@ function InitializeVilillane(Tree, condition) {
                     label: idLabelPair[adjacent[i]],
                     x: Math.cos(Math.PI * 2 * (i - 1 / 3) / numberLayer) * 40 + sigmaInstance.graph.nodes(input).x,
                     y: Math.sin(Math.PI * 2 * (i - 1 / 3) / numberLayer) * 40 + sigmaInstance.graph.nodes(input).y,
-                    size: 15
+                    size: 15,
                 });
             }
             sigmaInstance.graph.addEdge({
@@ -789,20 +660,16 @@ function InitializeVilillane(Tree, condition) {
         var adjacent = graph[inputid];
         var numberLayer = adjacent.length;
         showAround(inputid, sigmaInstance);
-        //Show additional nodes if all the node in this layer is small enough
         if (Object.keys(graph).length < 10) {
-            for (var _i = 0, adjacent_1 = adjacent; _i < adjacent_1.length; _i++) {
-                var layer1 = adjacent_1[_i];
+            for (var layer1 of adjacent) {
                 showAround(layer1, sigmaInstance);
-                var newAdjacent = graph[layer1];
-                for (var _a = 0, newAdjacent_1 = newAdjacent; _a < newAdjacent_1.length; _a++) {
-                    var layer2 = newAdjacent_1[_a];
+                let newAdjacent = graph[layer1];
+                for (var layer2 of newAdjacent) {
                     showAround(layer2, sigmaInstance);
                 }
             }
         }
     }
-    //for dragging the nodes.
     var dragListener1 = sigma.plugins.dragNodes(sigmaPlayer, sigmaPlayer.renderers[0]);
     dragListener1.bind('startdrag', function (event) {
         console.log(event);
@@ -833,40 +700,31 @@ function InitializeVilillane(Tree, condition) {
     scripting_1.initialize();
     var userInteractionObject = scripting_1.getUserInteractionObject();
     //RENDERING-----
-    //let displayPanel = {x: 500, y: 0};
+    //var displayPanel = {x: 500, y: 0};
     var textPanel = { x: 450, y: 350 };
     var actionsPanel = { x: 470, y: 375 };
     function render() {
-        //for all the parents locations of the agents
-        var alienPrevs = [];
-        var playerPrevs = [];
-        var AlienPrevLocs;
-        var PlayerPrevLocs;
-        //get agents' current location
-        var alienLocation = scripting_1.getAgentVariable(alien, "currentLocation");
-        var playerL = scripting_1.getVariable(playerLocation);
-        //generate all the parents locations of the alien
+        let alienPrevs = [];
+        let playerPrevs = [];
+        let AlienPrevLocs;
+        let PlayerPrevLocs;
+        let alienLocation = scripting_1.getAgentVariable(alien, "currentLocation");
+        let playerL = scripting_1.getVariable(playerLocation);
         AlienPrevLocs = PrevnameList[alienLocation];
         while (AlienPrevLocs != Tree.getValue()) {
             alienPrevs.push(AlienPrevLocs);
             AlienPrevLocs = PrevnameList[AlienPrevLocs];
         }
-        //make sure the game is not ended.
         if (Object.keys(scripting_1.locationGraph).includes(playerL)) {
-            //generate all the parents locations of the player
             PlayerPrevLocs = PrevnameList[playerL];
             while (PlayerPrevLocs != Tree.getValue()) {
                 playerPrevs.push(PlayerPrevLocs);
                 PlayerPrevLocs = PrevnameList[PlayerPrevLocs];
             }
             clear(sigmaPlayer);
-            clear(sigmaAlien);
             show(playerL, sigmaPlayer);
+            clear(sigmaAlien);
             show(alienLocation, sigmaAlien);
-            var playerText = document.getElementsByClassName("lefttext");
-            playerText[0].innerHTML = "level: " + playerPrevs.length.toString() + ", currently inside " + PrevnameList[playerL];
-            var AgentText = document.getElementsByClassName("righttext");
-            AgentText[0].innerHTML = "level: " + alienPrevs.length.toString() + ", currently inside " + PrevnameList[alienLocation];
         }
         else {
             clear(sigmaAlien);
@@ -875,9 +733,7 @@ function InitializeVilillane(Tree, condition) {
             sigmaAlien.refresh();
             //show(alienLocation, sigmaAlien);
         }
-        //show the locations of player and agents on the graph
-        for (var _i = 0, _a = sigmaPlayer.graph.nodes(); _i < _a.length; _i++) {
-            var node = _a[_i];
+        for (var node of sigmaPlayer.graph.nodes()) {
             if (node.id == alienLocation) {
                 node.image = { url: '../images/xenomorph.png' };
             }
@@ -891,8 +747,7 @@ function InitializeVilillane(Tree, condition) {
                 node.border_color = '#0000FF';
             }
         }
-        for (var _b = 0, _c = sigmaAlien.graph.nodes(); _b < _c.length; _b++) {
-            var node = _c[_b];
+        for (var node of sigmaAlien.graph.nodes()) {
             if (node.id == alienLocation) {
                 node.image = { url: '../images/xenomorph.png' };
             }
@@ -907,9 +762,8 @@ function InitializeVilillane(Tree, condition) {
         sigmaAlien.refresh();
         var config = {
             nodeMargin: 50,
-            gridSize: 5
+            gridSize: 5,
         };
-        //algorithm for no lapping layout.
         //Configure the algorithm
         var listener1 = sigmaPlayer.configNoverlap(config);
         var listener2 = sigmaAlien.configNoverlap(config);
@@ -921,8 +775,8 @@ function InitializeVilillane(Tree, condition) {
             console.log(event.type);
         });
         //Start the algorithm:
-        // sigmaPlayer.startNoverlap();
-        // sigmaAlien.startNoverlap();
+        sigmaPlayer.startNoverlap();
+        sigmaAlien.startNoverlap();
         displayTextAndActions();
     }
     var canvas = document.getElementById('display');
@@ -989,3 +843,4 @@ function InitializeVilillane(Tree, condition) {
     document.addEventListener("keypress", keyPress, false);
     document.addEventListener("keydown", keyDown, false);
 }
+//# sourceMappingURL=universityLayer.js.map

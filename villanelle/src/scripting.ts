@@ -232,7 +232,7 @@ export function getNextLocation(start: string, destination: string): string {
 }
 
 //1.2 agents
-var agents = [];
+export var agents = [];
 
 export function addAgent(agentName: string) {
     agents.push(agentName);
@@ -240,7 +240,7 @@ export function addAgent(agentName: string) {
 }
 
 //1.3 items
-var items = [];
+export var items = [];
 
 export function addItem(itemName: string) {
     items.push(itemName);
@@ -377,7 +377,8 @@ export function getUserInteractionObject() {
     return userInteractionObject;
 }
 
-export function worldTick() {
+export function worldTick(
+) {
     //all agent ticks
     for (var i = 0; i < agents.length; i++) {
         var tree = agentTrees[agents[i]];

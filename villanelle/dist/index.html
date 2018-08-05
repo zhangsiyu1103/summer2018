@@ -9,6 +9,18 @@
             overflow: hidden;
             background-color: black;
         }
+        div.lefttext{
+            color:white;
+            left: 50px;
+            top:30px;
+            position:absolute;
+        }
+        div.righttext{
+            color:white;
+            left: 750px;
+            top:30px;
+            position:absolute;
+        }
     </style>
 
 </head>
@@ -16,27 +28,43 @@
 <!--<body onload="begin();">-->
 
 <body>
+
+<div class="lefttext"></div>
+<div class="righttext">Tests</div>
+
 <div class="container">
 
     <canvas id="display" width="3000" height="1000">
         Canvas not supported
     </canvas>
     <style>
-        #graph-container {
+        #player-container {
             position: absolute;
             top: 50px;
-            right: 400px;
-            left: 400px;
+            right: 750px;
+            left: 50px;
             bottom: 400px;
-            border: 3px solid #73AD21;
+            border: 3px solid greenyellow;
+            align-content: center;
+        }
+
+        #alien-container {
+            position: absolute;
+            top: 50px;
+            right: 50px;
+            left: 750px;
+            bottom: 400px;
+            border: 3px solid red;
             align-content: center;
         }
 
         #container {
-            position: relative;
+            position: absolute;
         }
     </style>
-    <div id="graph-container"></div>
+    <div id="player-container"></div>
+    <div id="alien-container"></div>
+
 </div>
 <script type="text/javascript" src="bundle.js"></script>
 </body>

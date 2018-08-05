@@ -1,5 +1,5 @@
 University,#Undegraduate Administration Center*.1.1;#Student Center.1.2;#Apartment.0.3;#Residence Hall.1.5;#Science Building.1.4;#Music Center.1.1;#Art Center.1.3;#Humanities Hall.1.3;#Social Science Hall.1.3;#Recreational Center.1.2;Track Field.1.1;Dining Hall.1.4;#Health Center.1.3;Exit*.1.1;#Engineer Building.1.3;Swimming Pool.0.1;Tennis Court.0.1;Golf Court.0.1;Observatory.0.1;Security Office*.1.1
-Undegraduate Administration Center,Conference Room$.1.1;Undergraduate Admission Office*.1.1;registrar*.1.1;Study Abroad Office*.0.1;Reception Area$.1.1;Administrative Faculty Office*.1.1
+Undegraduate Administration Center,Conference Room$.1.1;Undergraduate Admission Office*.1.1;registrar*.1.1;Study Abroad Office*.0.1;Reception Area$.1.1;Administrative Faculty Office*.1.1;Library*.1.1
 Student Center,Conference Room$.1.1;Food Court.0.1;Computer Lab$.0.1;Game Center.0.1;Mail Room$.1.1;Student Organizations Area$.1.1
 Apartment,Parking Area$.1.1;Leasing Office$.1.1;Theater.0.1;#Recreational Center$.0.1
 Residence Hall,Laudry$.1.1;Student Louge$.1.1;Shared BathRoom$.1.1
@@ -14,19 +14,19 @@ Games Center,Ping Pong Room$.1.1;Billiard Room$.1.1;Computer Lab$.1.1;Bowling Ce
 Health Center,Emergency Room$.1.1;Insurance Office$.1.1;Consult$.1.1;X-ray Room$.0.1
 Engineer Building,Computer Lab$.1.1;Reception area$.1.1;Conference Room$.1.1;#Mechinical Engineer Center.0.1;#Electrical Engineer Center.0.1;#Chemical Engineer Center.0.1;#Biomedical Engineer Center.0.1;#Computer Engineer Center.0.1
 Library,Study Room$.1.1;Conference Room.1.1;Computer Lab$.0.1;Print Room$.1.1;Open Study Area$.1.1
-Anthropology Center,Lecture Hall$.1.1;Lab.1.4
-Chemistry Center,!Lecture Hall$.1.1;Lab.1.4
+Anthropology Center,!Lecture Hall$.1.1;Lab.1.4
+Chemistry Center,Lecture Hall$.1.1;Lab.1.4
 Physics Center,Lecture Hall$.1.1;Lab.1.4
 Math Center,Lecture Hall$.1.1;Lab.1.4
 Biology Center,Lecture Hall$.1.1;Lab.1.4
 Computer Science Center,Lecture Hall$.1.1;Lab.1.4
 Classics Center,Lecture Hall$.1.1;Lab.1.4
-Philosophy Center,Lecture Hall$.1.1;Lab.1.4
+Philosophy Center,!Lecture Hall$.1.1;Lab.1.4
 Literature Center,Lecture Hall$.1.1;Lab.1.4
 History Center,Lecture Hall$.1.1;Lab.1.4
 Ecnomics Center,Lecture Hall$.1.1;Lab.1.4
 Linguistic & Language Center,Lecture Hall$.1.1;Lab.1.4
-Education Center,Lecture Hall$.1.1;Lab.1.4
+Education Center,!Lecture Hall$.1.1;Lab.1.4
 Political Science Center,Lecture Hall$.1.1;Lab.1.4
 Geography Center,Lecture Hall$.1.1;Lab.1.4
 Mechinical Engineer Center,Lecture Hall$.1.1;Lab.1.4

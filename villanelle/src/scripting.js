@@ -200,16 +200,16 @@ function getNextLocation(start, destination) {
 }
 exports.getNextLocation = getNextLocation;
 //1.2 agents
-var agents = [];
+exports.agents = [];
 function addAgent(agentName) {
-    agents.push(agentName);
+    exports.agents.push(agentName);
     return agentName;
 }
 exports.addAgent = addAgent;
 //1.3 items
-var items = [];
+exports.items = [];
 function addItem(itemName) {
-    items.push(itemName);
+    exports.items.push(itemName);
     return itemName;
 }
 exports.addItem = addItem;
@@ -327,10 +327,10 @@ function getUserInteractionObject() {
 exports.getUserInteractionObject = getUserInteractionObject;
 function worldTick() {
     //all agent ticks
-    for (var i = 0; i < agents.length; i++) {
-        var tree = agentTrees[agents[i]];
+    for (var i = 0; i < exports.agents.length; i++) {
+        var tree = agentTrees[exports.agents[i]];
         if (!util_1.isUndefined(tree)) {
-            setVariable("executingAgent", agents[i]);
+            setVariable("executingAgent", exports.agents[i]);
             execute(tree);
         }
     }
