@@ -47,7 +47,7 @@ require('linkurious/plugins/sigma.renderers.linkurious/canvas/sigma.canvas.nodes
 require('linkurious/plugins/sigma.plugins.tooltips/sigma.plugins.tooltips');
 require('linkurious/plugins/sigma.plugins.design/sigma.plugins.design');
 //File names
-var filePrefix = "../data/university/";
+var filePrefix = "../data/";
 var files = ["cfgGramma.csv", "Prefix.csv", "NPCconstraint.txt"];
 //A structure for hierarchical generation
 var cfgTrees = /** @class */ (function () {
@@ -62,58 +62,43 @@ var cfgTrees = /** @class */ (function () {
         //* means the names remain unchanged
         //$ means the names has a prefix as previous name
         //# means the location is expandable
-        if (name.endsWith('*')) {
-            cleanName = name.substring(0, name.length - 1);
-        }
-        else if (name.endsWith('$')) {
-            cleanName = name.substring(0, name.length - 1);
-            idpre = prevName + " ";
+        //! means the names are items
+        if (name.startsWith('!')) {
+            var itemname = name.substring(1, name.length);
+            this.items = [];
+            this.items.push(prevName + " " + itemname);
+            this.idLabel[prevName + " " + itemname] = itemname;
+            this.val = 'item';
         }
         else {
-            cleanName = name;
-            idpre = retRand(prefix) + ' ';
-            labelpre = idpre;
-        }
-        if (name.startsWith('#')) {
-            this.branches = [];
-            if (name.startsWith('#!')) {
-                this.items = [];
-                cleanName = cleanName.substring(2, cleanName.length);
-                var rawitems = processRand(rule[cleanName]);
-                for (var _i = 0, rawitems_1 = rawitems; _i < rawitems_1.length; _i++) {
-                    var item = rawitems_1[_i];
-                    this.items.push(prevName + " " + item);
-                    this.idLabel[prevName + " " + item] = item;
-                }
+            if (name.endsWith('$')) {
+                cleanName = name.substring(0, name.length - 1);
+                idpre = prevName + " ";
             }
             else {
-                cleanName = cleanName.substring(1, cleanName.length);
+                cleanName = name;
+                idpre = retRand(prefix) + ' ';
+                labelpre = idpre;
             }
-            var children = processRand(rule[cleanName]);
-            for (var _a = 0, children_1 = children; _a < children_1.length; _a++) {
-                var value = children_1[_a];
-                var newBranch = new cfgTrees(value, rule, prefix, idpre + cleanName);
-                combine(this.idLabel, newBranch.idLabel);
-                combine(this.assortedDict, newBranch.assortedDict);
-                this.branches.push(newBranch);
+            if (name.startsWith('#')) {
+                this.branches = [];
+                cleanName = cleanName.substring(1);
+                var children = processRand(rule[cleanName]);
+                for (var _i = 0, children_1 = children; _i < children_1.length; _i++) {
+                    var value = children_1[_i];
+                    var newBranch = new cfgTrees(value, rule, prefix, idpre + cleanName);
+                    combine(this.idLabel, newBranch.idLabel);
+                    combine(this.assortedDict, newBranch.assortedDict);
+                    this.branches.push(newBranch);
+                }
             }
-        }
-        else if (name.startsWith('!')) {
-            cleanName = cleanName.substring(1, cleanName.length);
-            this.items = [];
-            var rawitems = processRand(rule[cleanName]);
-            for (var _b = 0, rawitems_2 = rawitems; _b < rawitems_2.length; _b++) {
-                var item = rawitems_2[_b];
-                this.items.push(prevName + " " + item);
-                this.idLabel[prevName + " " + item] = item;
+            this.val = idpre + cleanName;
+            this.idLabel[this.val] = labelpre + cleanName;
+            if (util_1.isUndefined(this.assortedDict[cleanName.toLowerCase()])) {
+                this.assortedDict[cleanName.toLowerCase()] = [];
             }
+            this.assortedDict[cleanName.toLowerCase()].push(this.val);
         }
-        this.val = idpre + cleanName;
-        this.idLabel[this.val] = labelpre + cleanName;
-        if (util_1.isUndefined(this.assortedDict[cleanName.toLowerCase()])) {
-            this.assortedDict[cleanName.toLowerCase()] = [];
-        }
-        this.assortedDict[cleanName.toLowerCase()].push(this.val);
     }
     cfgTrees.prototype.getValue = function () {
         return this.val;
@@ -130,7 +115,9 @@ var cfgTrees = /** @class */ (function () {
         if (this.branches != null) {
             for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
                 var value = _a[_i];
-                ret.push(value.val);
+                if (value.val != 'item') {
+                    ret.push(value.val);
+                }
             }
         }
         return ret;
@@ -192,54 +179,16 @@ var cfgTrees = /** @class */ (function () {
         }
         return ret;
     };
-    return cfgTrees;
-}());
-//A structure for NPC constraint
-var constrain = /** @class */ (function () {
-    function constrain(data) {
-        this.item = [];
-        this.location = [];
-        this.agent = [];
-        this.locationItem = {};
-        //read the value inside of a parenthesis.
-        var regExp = /\(([^)]+)\)/;
-        for (var _i = 0, data_1 = data; _i < data_1.length; _i++) {
-            var val = data_1[_i];
-            var parentheses = val.match(regExp)[1];
-            var input = parentheses.split(',');
-            //identify the motions of each goals.
-            if (val.toLowerCase().startsWith('pickup')) {
-                for (var i = 0; i < input.length; i++) {
-                    while (input[i].startsWith(' ')) {
-                        input[i] = input[i].substring(1);
-                    }
-                    while (input[i].endsWith(' ')) {
-                        input[i] = input[i].substring(0, input[i].length - 1);
-                    }
-                }
-                this.agent.push(input[0]);
-                this.item.push(input[1]);
-                this.location.push(input[2]);
-                if (util_1.isUndefined(this.locationItem[input[2]])) {
-                    this.locationItem[input[2]] = [];
-                }
-                this.locationItem[input[2]].push(input[1]);
-            }
-            else if (val.toLowerCase().startsWith('move')) {
-                for (var i = 0; i < input.length; i++) {
-                    while (input[i].startsWith(' ')) {
-                        input[i] = input[i].substring(1);
-                    }
-                    while (input[i].endsWith(' ')) {
-                        input[i] = input[i].substring(0, input[i].length - 1);
-                    }
-                }
-                this.agent.push(input[0]);
-                this.location.push(input[1]);
+    cfgTrees.prototype.print = function () {
+        console.log(this.getValue());
+        if (this.branches != null) {
+            for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
+                var value = _a[_i];
+                value.print();
             }
         }
-    }
-    return constrain;
+    };
+    return cfgTrees;
 }());
 //A function for combining to dictionary
 function combine(dict1, dict2) {
@@ -270,7 +219,6 @@ function readFiles() {
                 case 0:
                     data = {};
                     _loop_1 = function (file) {
-                        var value;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0: return [4 /*yield*/, new Promise(function (resolve, reject) {
@@ -292,7 +240,7 @@ function readFiles() {
                                         req.send(null);
                                     })];
                                 case 1:
-                                    value = _a.sent();
+                                    _a.sent();
                                     return [2 /*return*/];
                             }
                         });
@@ -317,8 +265,9 @@ function readFiles() {
 //call all the functions needed
 readFiles().then(function (value) {
     var tree = generateTree(value);
-    var condition = processCondition(value);
-    InitializeVilillane(tree, condition);
+    //tree.print();
+    // let condition: constrain = processCondition(value);
+    InitializeVilillane(tree);
 });
 //From the raw data to generate the context-free grammar trees for the map
 function generateTree(data) {
@@ -329,11 +278,7 @@ function generateTree(data) {
         var rows = rawRule[i].split(',');
         newRule[rows[0]] = rows[1];
     }
-    return new cfgTrees('#University', newRule, Prefix, '');
-}
-//From the raw data to generate the constraints
-function processCondition(data) {
-    return new constrain(data["NPCconstraint.txt"]);
+    return new cfgTrees('#University Map$', newRule, Prefix, '');
 }
 //For each elements of context free grammar, generate a random number of certain type
 // of buildings according to the minimum and maximum
@@ -400,65 +345,22 @@ function connectNodes(location) {
     }
     return nodes;
 }
-function InitializeVilillane(Tree, condition) {
+function InitializeVilillane(Tree) {
     //get assortDict for NPC constraint
     var assortDict = Tree.getAssortedDict();
     //get itemList for display items
     var itemsList = Tree.getItemsList();
     //get expandList to generate a expand graph
     var expandList = Tree.getExpandList();
-    //get all initialized locations
-    var originlocations = Tree.getAlllocations();
     //get the initialized id pair
     var idLabelPair = Tree.getIdLabelPair();
     //get the initialized prevname pairs
     var PrevnameList = Tree.getPrevnameList();
     // agents
-    var alien = scripting_1.addAgent("Alien");
-    // items
-    var crewCard1 = scripting_1.addItem("Crew card1");
-    var crewCard2 = scripting_1.addItem("Crew card2");
-    // new constraint agents, locations and items
-    var conditionAgent = condition.agent;
-    var conditionlocation = condition.location;
-    var conditionlocationItem = condition.locationItem;
-    //Apply the constraint to change the initialized data.
-    for (var _i = 0, conditionAgent_1 = conditionAgent; _i < conditionAgent_1.length; _i++) {
-        var agent = conditionAgent_1[_i];
-        if (!scripting_1.agents.includes(agent)) {
-            scripting_1.addAgent(agent);
-        }
-    }
-    for (var _a = 0, conditionlocation_1 = conditionlocation; _a < conditionlocation_1.length; _a++) {
-        var loc = conditionlocation_1[_a];
-        if (!Object.keys(assortDict).includes(loc.toLowerCase()) && !originlocations.includes(loc)) {
-            expandList[Tree.getValue()].push(loc);
-            PrevnameList[loc] = Tree.getValue();
-            idLabelPair[loc] = loc;
-        }
-    }
-    for (var _b = 0, _c = Object.keys(conditionlocationItem); _b < _c.length; _b++) {
-        var loc = _c[_b];
-        if (!Object.keys(assortDict).includes(loc.toLowerCase()) && !originlocations.includes(loc)) {
-            itemsList[loc] = conditionlocationItem[loc];
-        }
-        else if (Object.keys(assortDict).includes(loc.toLowerCase())) {
-            if (util_1.isUndefined(itemsList[assortDict[loc][0]])) {
-                itemsList[assortDict[loc][0]] = [];
-            }
-            itemsList[assortDict[loc][0]] = itemsList[assortDict[loc][0]].concat(conditionlocationItem[loc]);
-        }
-        else if (originlocations.includes(loc)) {
-            if (util_1.isUndefined(itemsList[loc])) {
-                itemsList[loc] = [];
-            }
-            else {
-                itemsList[loc] = itemsList[loc].concat(conditionlocationItem[loc]);
-            }
-        }
-    }
-    for (var _d = 0, _e = Object.keys(itemsList); _d < _e.length; _d++) {
-        var key = _e[_d];
+    var NPC = scripting_1.addAgent("Alien");
+    //items
+    for (var _i = 0, _a = Object.keys(itemsList); _i < _a.length; _i++) {
+        var key = _a[_i];
         for (var i = 0; i < itemsList[key].length; i++) {
             scripting_1.addItem(itemsList[key][i]);
             scripting_1.setItemVariable(itemsList[key][i], "currentLocation", key);
@@ -467,12 +369,11 @@ function InitializeVilillane(Tree, condition) {
     //Generate the expandGraph from the modified expandList
     //For each expandable location, the dictionary contains a randomly connected graph for all its children
     var expandGraph = {};
-    for (var _f = 0, _g = Object.keys(expandList); _f < _g.length; _f++) {
-        var keys = _g[_f];
+    for (var _b = 0, _c = Object.keys(expandList); _b < _c.length; _b++) {
+        var keys = _c[_b];
         expandGraph[keys] = connectNodes(expandList[keys]);
     }
-    console.log(itemsList);
-    //Add locations to villanelle
+    //Add locations to vilanelle
     function addLocationGraph(graph) {
         for (var key in graph) {
             if (key !== Tree.getValue()) {
@@ -484,42 +385,30 @@ function InitializeVilillane(Tree, condition) {
     for (var key in expandGraph) {
         addLocationGraph(expandGraph[key]);
     }
+    //Initialize locations to assign items and agent
     var locations = Object.keys(scripting_1.locationGraph);
-    //items variable
-    scripting_1.setItemVariable(crewCard1, "currentLocation", retRand(locations));
-    scripting_1.setItemVariable(crewCard2, "currentLocation", retRand(locations));
-    var itemDisplay = scripting_1.setVariable("itemDisplay", false);
+    //Initialize player to be at one of the entrance of all universities
+    var allUniversity = expandList[Tree.getValue()];
     // variables
-    //alien
-    scripting_1.setAgentVariable(alien, "currentLocation", retRand(locations));
-    //player
-    var playerLocation = scripting_1.setVariable("playerLocation", retRand(locations));
-    var crewCardsCollected = scripting_1.setVariable("crewCardsCollected", 0);
+    var itemDisplay = scripting_1.setVariable("itemDisplay", false);
     var inventory = scripting_1.setVariable("inventory", []);
+    var selected = scripting_1.setVariable("selected", false);
+    var endGame = scripting_1.setVariable("endGame", false);
+    var selectedUniversity = scripting_1.setVariable("selectedUniversity", false);
+    var meet = scripting_1.setVariable("meet", false);
+    //NPC
+    scripting_1.setAgentVariable(NPC, "currentLocation", retRand(locations));
+    //player
+    var playerLocation = scripting_1.setVariable("playerLocation", retRand(allUniversity));
     // 2. Define BTs
-    // create ground actions
-    //     itemsList[getVariable(playerLocation)] = [];
-    //
-    //     allItems.push("card");
-    //     addItem("card");
-    //     setItemVariable("card", "currentLocation", getVariable(playerLocation));
-    //     itemsList[getVariable(playerLocation)].push("card");
-    //     allItems.push("book");
-    //     addItem("book");
-    //     setItemVariable("book", "currentLocation", getVariable(playerLocation));
-    //     itemsList[getVariable(playerLocation)].push("book");
-    //     allItems.push("key");
-    //     addItem("key");
-    //     setItemVariable("key", "currentLocation", getVariable(playerLocation));
-    //     itemsList[getVariable(playerLocation)].push("key");
-    //Recover location array
+    //recover the array of all universities and location
     locations = Object.keys(scripting_1.locationGraph);
+    allUniversity = expandList[Tree.getValue()];
     var setRandNumber = scripting_1.action(function () { return true; }, function () {
         scripting_1.setVariable("randNumber", scripting_1.getRandNumber(1, locations.length));
     }, 0);
-    //Initialize behavior tree for aliens
+    //Initialize behavior tree for NPCs
     var BTlist = [];
-    var id = 0;
     var _loop_2 = function (i) {
         //console.log(locations[i]);
         var actions = scripting_1.action(function () { return scripting_1.getVariable("randNumber") == i + 1; }, function () { return scripting_1.setVariable("destination", locations[i]); }, 0);
@@ -528,7 +417,7 @@ function InitializeVilillane(Tree, condition) {
     for (var i = 0; i < locations.length; i++) {
         _loop_2(i);
     }
-    var atDestination = function () { return scripting_1.getVariable("destination") == scripting_1.getAgentVariable(alien, "currentLocation"); };
+    var atDestination = function () { return scripting_1.getVariable("destination") == scripting_1.getAgentVariable(NPC, "currentLocation"); };
     var setDestinationPrecond = function () { return scripting_1.isVariableNotSet("destination") || atDestination(); };
     // create behavior trees
     var setNextDestination = scripting_1.sequence([
@@ -536,13 +425,27 @@ function InitializeVilillane(Tree, condition) {
         scripting_1.selector(BTlist),
     ]);
     var gotoNextLocation = scripting_1.action(function () { return true; }, function () {
-        scripting_1.setAgentVariable(alien, "currentLocation", scripting_1.getNextLocation(scripting_1.getAgentVariable(alien, "currentLocation"), scripting_1.getVariable("destination")));
-        console.log("Alien is at: " + scripting_1.getAgentVariable(alien, "currentLocation"));
+        scripting_1.setAgentVariable(NPC, "currentLocation", scripting_1.getNextLocation(scripting_1.getAgentVariable(NPC, "currentLocation"), scripting_1.getVariable("destination")));
+        console.log("Alien is at: " + scripting_1.getAgentVariable(NPC, "currentLocation"));
     }, 0);
-    var eatPlayer = scripting_1.action(function () { return scripting_1.getAgentVariable(alien, "currentLocation") == scripting_1.getVariable(playerLocation); }, function () {
-        scripting_1.setVariable("endGame", "lose");
-        scripting_1.setVariable(playerLocation, "NA");
+    var setRandNumber_2 = scripting_1.action(function () { return true; }, function () {
+        scripting_1.setVariable("randNumber", scripting_1.getRandNumber(1, 3));
     }, 0);
+    var meetPlayer = scripting_1.sequence([setRandNumber_2,
+        scripting_1.guard(function () { return scripting_1.getAgentVariable(NPC, "currentLocation") == scripting_1.getVariable(playerLocation); }, scripting_1.selector([
+            scripting_1.action(function () { return scripting_1.getVariable("randNumber") == 1; }, function () {
+                scripting_1.setVariable('endMethod', 'love');
+                scripting_1.setVariable(selectedUniversity, get_uni(scripting_1.getVariable(playerLocation)));
+                scripting_1.setVariable(endGame, true);
+            }, 0),
+            scripting_1.action(function () { return scripting_1.getVariable("randNumber") == 2; }, function () {
+                scripting_1.setVariable('endMethod', 'die');
+                scripting_1.setVariable(endGame, true);
+            }, 0),
+            scripting_1.action(function () { return scripting_1.getVariable("randNumber") == 3; }, function () {
+                return scripting_1.setVariable(meet, true);
+            }, 0)
+        ]))]);
     var search = scripting_1.sequence([
         scripting_1.selector([
             scripting_1.guard(setDestinationPrecond, setNextDestination),
@@ -551,17 +454,26 @@ function InitializeVilillane(Tree, condition) {
         ]),
         gotoNextLocation,
     ]);
-    var alienBT = scripting_1.selector([
-        eatPlayer,
+    var NPCBT = scripting_1.selector([
+        meetPlayer,
         scripting_1.sequence([
-            search, eatPlayer
+            search, meetPlayer
         ])
     ]);
     //attach behaviour trees to agents
-    scripting_1.attachTreeToAgent(alien, alienBT);
+    scripting_1.attachTreeToAgent(NPC, NPCBT);
+    //a function to determine which university the current location is in
+    function get_uni(loc) {
+        var uni = loc;
+        while (PrevnameList[uni] != Tree.getValue()) {
+            uni = PrevnameList[uni];
+        }
+        return uni;
+    }
     var _loop_3 = function (key) {
         var seq = [];
         seq.push(scripting_1.displayDescriptionAction("You enter the " + idLabelPair[key] + "."));
+        seq.push(scripting_1.addUserAction("Select University.", function () { return scripting_1.setVariable(selected, true); }));
         seq.push(scripting_1.addUserAction("Stay where you are.", function () {
         }));
         //Check whether it's in a lower layer
@@ -575,14 +487,17 @@ function InitializeVilillane(Tree, condition) {
             seq.push(scripting_1.addUserAction("Go inside " + idLabelPair[key] + " to enter " + idLabelPair[expandList[key][0]] + ".", function () { return scripting_1.setVariable(playerLocation, expandList[key][0]); }));
         }
         var graph = completeGraph(expandGraph[PrevnameList[key]]);
-        var _loop_5 = function (adj) {
+        var _loop_7 = function (adj) {
             seq.push(scripting_1.addUserAction("Enter the " + idLabelPair[adj] + ".", function () { return scripting_1.setVariable(playerLocation, adj); }));
         };
         for (var _i = 0, _a = graph[key]; _i < _a.length; _i++) {
             var adj = _a[_i];
-            _loop_5(adj);
+            _loop_7(adj);
         }
-        var StateBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == key && scripting_1.getVariable(itemDisplay) == false; }, scripting_1.sequence(seq));
+        var StateBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == key &&
+            scripting_1.getVariable(itemDisplay) == false &&
+            scripting_1.getVariable(selected) == false &&
+            scripting_1.getVariable(endGame) == false; }, scripting_1.sequence(seq));
         scripting_1.addUserInteractionTree(StateBT);
     };
     // 3. Construct story
@@ -590,75 +505,79 @@ function InitializeVilillane(Tree, condition) {
     for (var key in scripting_1.locationGraph) {
         _loop_3(key);
     }
-    //Behavior tree for items
-    var itemBT = scripting_1.guard(function () { return !util_1.isUndefined(itemsList[scripting_1.getVariable(playerLocation)]) && itemsList[scripting_1.getVariable(playerLocation)].length != 0 && scripting_1.getVariable(itemDisplay) == false; }, scripting_1.sequence([
-        scripting_1.displayDescriptionAction("You notice items lying around."),
-        scripting_1.addUserAction("show all the items", function () { return scripting_1.setVariable(itemDisplay, true); })
-    ]));
-    //attach the bt to thr tree
-    scripting_1.addUserInteractionTree(itemBT);
     var _loop_4 = function (i) {
-        var showitemBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(scripting_1.items[i], "currentLocation") && scripting_1.getVariable(itemDisplay) == true; }, scripting_1.sequence([
+        var showItemBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(scripting_1.items[i], "currentLocation")
+            && scripting_1.getVariable(itemDisplay) == true; }, scripting_1.sequence([
             scripting_1.addUserAction("Pick up the " + scripting_1.items[i] + ".", function () {
                 scripting_1.setVariable(itemDisplay, false);
-                var curInv = scripting_1.getVariable("inventory");
+                var curInv = scripting_1.getVariable(inventory);
                 curInv.push(scripting_1.items[i]);
                 itemsList[scripting_1.getVariable(playerLocation)].splice(itemsList[scripting_1.getVariable(playerLocation)].indexOf(scripting_1.items[i]), 1);
                 scripting_1.displayActionEffectText("You pick up the " + scripting_1.items[i] + ".");
                 scripting_1.setItemVariable(scripting_1.items[i], "currentLocation", "player");
-                scripting_1.setVariable("inventory", curInv);
+                scripting_1.setVariable(inventory, curInv);
             })
         ]));
-        scripting_1.addUserInteractionTree(showitemBT);
+        scripting_1.addUserInteractionTree(showItemBT);
     };
     //Create behavior trees for every items
     for (var i = 0; i < scripting_1.items.length; i++) {
         _loop_4(i);
     }
-    //crewcard BT
-    var crewCard1BT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(crewCard1, "currentLocation"); }, scripting_1.sequence([
-        scripting_1.displayDescriptionAction("You notice a crew card lying around."),
-        scripting_1.addUserActionTree("Pick up the crew card", scripting_1.sequence([
-            scripting_1.action(function () { return true; }, function () {
-                scripting_1.displayActionEffectText("You pick up the crew card.");
-                scripting_1.setItemVariable(crewCard1, "currentLocation", "player");
-                scripting_1.setVariable(crewCardsCollected, scripting_1.getVariable(crewCardsCollected) + 1);
-            }, 0),
-            scripting_1.action(function () { return true; }, function () {
-                scripting_1.displayActionEffectText("Wow you know how to pick up things.");
-            }, 0)
-        ]))
+    var universitySeq = [];
+    var _loop_5 = function (i) {
+        universitySeq.push(scripting_1.addUserAction("select " + allUniversity[i] + ".", function () {
+            scripting_1.setVariable(selectedUniversity, allUniversity[i]);
+            scripting_1.setVariable('endMethod', 'select');
+            scripting_1.setVariable(endGame, true);
+        }));
+    };
+    for (var i = 0; i < allUniversity.length; i++) {
+        _loop_5(i);
+    }
+    var universityBT = scripting_1.guard(function () { return scripting_1.getVariable(selected) == true && scripting_1.getVariable(endGame) == false; }, scripting_1.sequence(universitySeq));
+    scripting_1.addUserInteractionTree(universityBT);
+    var meetBT = scripting_1.guard(function () { return scripting_1.getVariable(meet) == true; }, scripting_1.sequence([
+        scripting_1.action(function () { return true; }, function () { return scripting_1.setVariable(meet, false); }, 0),
+        scripting_1.displayDescriptionAction("Nothing happens between you and the stranger")
     ]));
-    var crewCard2BT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == scripting_1.getItemVariable(crewCard2, "currentLocation"); }, scripting_1.sequence([
-        scripting_1.displayDescriptionAction("You notice a crew card lying around."),
-        scripting_1.addUserAction("Pick up the crew card", function () {
-            scripting_1.displayActionEffectText("You pick up the crew card.");
-            scripting_1.setItemVariable(crewCard2, "currentLocation", "player");
-            scripting_1.setVariable(crewCardsCollected, scripting_1.getVariable(crewCardsCollected) + 1);
-        })
-    ]));
-    //A BT for the exit
-    var ExitBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == "Exit"; }, scripting_1.selector([
-        scripting_1.guard(function () { return scripting_1.getVariable(crewCardsCollected) >= 2; }, scripting_1.sequence([
-            scripting_1.displayDescriptionAction("You can now activate the exit and flee!"),
-            scripting_1.addUserAction("Activate and get out!", function () {
-                scripting_1.setVariable("endGame", "win");
-                scripting_1.setVariable(playerLocation, "NA");
-            })
-        ])),
-        scripting_1.displayDescriptionAction("You need 2 crew cards to activate the exit elevator system.")
-    ]));
-    scripting_1.addUserInteractionTree(crewCard1BT);
-    scripting_1.addUserInteractionTree(crewCard2BT);
-    scripting_1.addUserInteractionTree(ExitBT);
-    var alienNearby = scripting_1.guard(function () { return scripting_1.areAdjacent(scripting_1.getVariable(playerLocation), scripting_1.getAgentVariable(alien, "currentLocation")); }, scripting_1.displayDescriptionAction("You hear a thumping sound. The alien is nearby."));
-    scripting_1.addUserInteractionTree(alienNearby);
-    var gameOver = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == "NA"; }, scripting_1.selector([
-        scripting_1.guard(function () { return scripting_1.getVariable("endGame") == "win"; }, scripting_1.displayDescriptionAction("You have managed to escape!")),
-        scripting_1.guard(function () { return scripting_1.getVariable("endGame") == "lose"; }, scripting_1.displayDescriptionAction("The creature grabs you before you can react! You struggle for a bit before realising it's all over.."))
+    scripting_1.addUserInteractionTree(meetBT);
+    var _loop_6 = function (i) {
+        var rand = Math.random();
+        if (rand < 0.1) {
+            var brokenBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == locations[i] &&
+                scripting_1.getVariable(itemDisplay) == false &&
+                scripting_1.getVariable(selected) == false &&
+                scripting_1.getVariable(endGame) == false; }, scripting_1.sequence([
+                scripting_1.displayDescriptionAction('The place you enter is broken!')
+            ]));
+            scripting_1.addUserInteractionTree(brokenBT);
+        }
+        else if (rand < 0.2) {
+            var fancyBT = scripting_1.guard(function () { return scripting_1.getVariable(playerLocation) == locations[i] &&
+                scripting_1.getVariable(itemDisplay) == false &&
+                scripting_1.getVariable(selected) == false &&
+                scripting_1.getVariable(endGame) == false; }, scripting_1.sequence([
+                scripting_1.displayDescriptionAction('The place you enter is fancy!')
+            ]));
+            scripting_1.addUserInteractionTree(fancyBT);
+        }
+    };
+    for (var i = 0; i < locations.length; i++) {
+        _loop_6(i);
+    }
+    var gameOver = scripting_1.guard(function () { return scripting_1.getVariable(endGame) == true; }, scripting_1.selector([
+        scripting_1.action(function () { return scripting_1.getVariable('endMethod') == 'select'; }, function () {
+            userInteractionObject.text += "\n" + "You decide to go to " + scripting_1.getVariable(selectedUniversity) + "!";
+        }, 0),
+        scripting_1.action(function () { return scripting_1.getVariable('endMethod') == 'love'; }, function () {
+            userInteractionObject.text += "\n" + "You fall in love with the one you met, finally decide go to " +
+                scripting_1.getVariable(selectedUniversity) + '!';
+        }, 0),
+        scripting_1.guard(function () { return scripting_1.getVariable('endMethod') == 'die'; }, scripting_1.displayDescriptionAction("Sadly, You are killed by the stranger you meet!"))
     ]));
     scripting_1.addUserInteractionTree(gameOver);
-    //Initialize sigma for player and alien
+    //Initialize sigma for player and NPC
     var sigmaPlayer = new sigma({
         graph: {
             nodes: [],
@@ -680,16 +599,6 @@ function InitializeVilillane(Tree, condition) {
             sideMargin: 15
         }
     });
-    // var tooltipPlayer = sigma.plugins.tooltips(
-    //     sigmaPlayer,
-    //     sigmaPlayer.renderers[0],
-    //     {
-    //         node: [{
-    //             show: 'clickNode',
-    //             template: 'Hello node!'
-    //         }]
-    //     }
-    // );
     var sigmaAlien = new sigma({
         graph: {
             nodes: [],
@@ -697,7 +606,7 @@ function InitializeVilillane(Tree, condition) {
         },
         renderer: {
             type: 'canvas',
-            container: 'alien-container'
+            container: 'NPC-container'
         },
         settings: {
             nodeBorderSize: 5,
@@ -710,16 +619,6 @@ function InitializeVilillane(Tree, condition) {
             sideMargin: 15
         }
     });
-    // var tooltipAlien = sigma.plugins.tooltips(
-    //     sigmaAlien,
-    //     sigmaAlien.renderers[0],
-    //     {
-    //         node: [{
-    //             show: 'clickNode',
-    //             template: 'Hello node!'
-    //         }]
-    //     }
-    // );
     //A unique ID for each edge.
     var edgeID = 0;
     //Clear the graph.
@@ -838,17 +737,17 @@ function InitializeVilillane(Tree, condition) {
     var actionsPanel = { x: 470, y: 375 };
     function render() {
         //for all the parents locations of the agents
-        var alienPrevs = [];
+        var NPCPrevs = [];
         var playerPrevs = [];
         var AlienPrevLocs;
         var PlayerPrevLocs;
         //get agents' current location
-        var alienLocation = scripting_1.getAgentVariable(alien, "currentLocation");
+        var NPCLocation = scripting_1.getAgentVariable(NPC, "currentLocation");
         var playerL = scripting_1.getVariable(playerLocation);
-        //generate all the parents locations of the alien
-        AlienPrevLocs = PrevnameList[alienLocation];
+        //generate all the parents locations of the NPC
+        AlienPrevLocs = PrevnameList[NPCLocation];
         while (AlienPrevLocs != Tree.getValue()) {
-            alienPrevs.push(AlienPrevLocs);
+            NPCPrevs.push(AlienPrevLocs);
             AlienPrevLocs = PrevnameList[AlienPrevLocs];
         }
         //make sure the game is not ended.
@@ -862,29 +761,52 @@ function InitializeVilillane(Tree, condition) {
             clear(sigmaPlayer);
             clear(sigmaAlien);
             show(playerL, sigmaPlayer);
-            show(alienLocation, sigmaAlien);
+            show(NPCLocation, sigmaAlien);
             var playerText = document.getElementsByClassName("lefttext");
-            playerText[0].innerHTML = "level: " + playerPrevs.length.toString() + ", currently inside " + PrevnameList[playerL];
+            var playerinnerHtml = '';
+            for (var i = 0; i <= playerPrevs.length; i++) {
+                playerinnerHtml += '<span class="playerdot"></span>';
+            }
+            if (PrevnameList[playerL] == Tree.getValue()) {
+                playerinnerHtml += '  ' + Tree.getValue() + '/';
+            }
+            else {
+                playerinnerHtml += '  ' + PrevnameList[PrevnameList[playerL]] + '/';
+                playerinnerHtml += PrevnameList[playerL] + '/';
+            }
+            playerText[0].innerHTML = playerinnerHtml;
             var AgentText = document.getElementsByClassName("righttext");
-            AgentText[0].innerHTML = "level: " + alienPrevs.length.toString() + ", currently inside " + PrevnameList[alienLocation];
+            var AgentinnerHtml = '';
+            for (var i = 0; i <= NPCPrevs.length; i++) {
+                AgentinnerHtml += '<span class="agentdot"></span>';
+            }
+            if (PrevnameList[NPCLocation] == Tree.getValue()) {
+                AgentinnerHtml += '  ' + Tree.getValue() + '/';
+            }
+            else {
+                AgentinnerHtml += '  ' + PrevnameList[PrevnameList[NPCLocation]] + '/';
+                AgentinnerHtml += PrevnameList[NPCLocation] + '/';
+            }
+            AgentText[0].innerHTML = AgentinnerHtml;
         }
         else {
             clear(sigmaAlien);
             clear(sigmaPlayer);
             sigmaPlayer.refresh();
             sigmaAlien.refresh();
-            //show(alienLocation, sigmaAlien);
+            //show(NPCLocation, sigmaAlien);
         }
         //show the locations of player and agents on the graph
+        //the image of boy from http://www.urltarget.com/icon-symbol-people-boy-man-male-cartoon-scout.html
         for (var _i = 0, _a = sigmaPlayer.graph.nodes(); _i < _a.length; _i++) {
             var node = _a[_i];
-            if (node.id == alienLocation) {
-                node.image = { url: '../images/xenomorph.png' };
+            if (node.id == NPCLocation) {
+                node.image = { url: '../images/boy.png' };
             }
             if (node.id == playerL) {
                 node.image = { url: '../images/player2.png' };
             }
-            if (alienPrevs.includes(node.id)) {
+            if (NPCPrevs.includes(node.id)) {
                 node.border_color = '#ff0000';
             }
             if (!util_1.isUndefined(itemsList[node.id]) && itemsList[node.id].length != 0) {
@@ -893,11 +815,11 @@ function InitializeVilillane(Tree, condition) {
         }
         for (var _b = 0, _c = sigmaAlien.graph.nodes(); _b < _c.length; _b++) {
             var node = _c[_b];
-            if (node.id == alienLocation) {
-                node.image = { url: '../images/xenomorph.png' };
-            }
             if (node.id == playerL) {
                 node.image = { url: '../images/player2.png' };
+            }
+            if (node.id == NPCLocation) {
+                node.image = { url: '../images/boy.png' };
             }
             if (playerPrevs.includes(node.id)) {
                 node.border_color = '#ADFF2F';
@@ -921,8 +843,8 @@ function InitializeVilillane(Tree, condition) {
             console.log(event.type);
         });
         //Start the algorithm:
-        // sigmaPlayer.startNoverlap();
-        // sigmaAlien.startNoverlap();
+        sigmaPlayer.startNoverlap();
+        sigmaAlien.startNoverlap();
         displayTextAndActions();
     }
     var canvas = document.getElementById('display');
@@ -949,7 +871,6 @@ function InitializeVilillane(Tree, condition) {
             yOffset += yOffsetIncrement;
         }
         displayArrow();
-        console.log("Crew cards: " + scripting_1.getVariable(crewCardsCollected));
     }
     function displayArrow() {
         if (userInteractionObject.userActionsText.length != 0) {

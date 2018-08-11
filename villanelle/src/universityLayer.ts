@@ -20,21 +20,23 @@ require('linkurious/plugins/sigma.plugins.design/sigma.plugins.design');
 //A commonly used type
 type maps = { [key: string]: string[] };
 //File names
-let filePrefix = "../data/university/";
+let filePrefix = "../data/";
 let files = ["cfgGramma.csv", "Prefix.csv", "NPCconstraint.txt"];
 
 //A structure for hierarchical generation
 class cfgTrees {
     //the current location
-    private val: string;
+    val: string;
     //The children of the current location
-    private branches: cfgTrees[] | null;
+    branches: cfgTrees[] | null;
     //A pair for unique id
-    private idLabel: { [key: string]: string };
+    idLabel: { [key: string]: string };
     //A dict for different types of buildings
-    private assortedDict: maps;
+    assortedDict: maps;
     //The items on current location
-    private items: string[] | null;
+    items: string[] | null;
+    //The name of upper layer location
+    prevName: string
 
 
     constructor(name: string, rule: { [key: string]: string }, prefix: string[], prevName: String) {
@@ -45,55 +47,43 @@ class cfgTrees {
         this.idLabel = {};
         this.assortedDict = {};
         this.items = null;
-        //* means the names remain unchanged
+        this.prevName = prevName;
         //$ means the names has a prefix as previous name
         //# means the location is expandable
-        if (name.endsWith('*')) {
-            cleanName = name.substring(0, name.length - 1);
-        } else if (name.endsWith('$')) {
-            cleanName = name.substring(0, name.length - 1);
-            idpre = prevName + " ";
-        } else {
-            cleanName = name;
-            idpre = retRand(prefix) + ' ';
-            labelpre = idpre;
-        }
-
-        if (name.startsWith('#')) {
-            this.branches = [];
-            if (name.startsWith('#!')) {
-                this.items = [];
-                cleanName = cleanName.substring(2, cleanName.length);
-                let rawitems = processRand(rule[cleanName]);
-                for (let item of rawitems) {
-                    this.items.push(prevName + " " + item);
-                    this.idLabel[prevName + " " + item] = item;
-                }
-            } else {
-                cleanName = cleanName.substring(1, cleanName.length);
-            }
-            let children: string[] = processRand(rule[cleanName]);
-            for (let value of children) {
-                let newBranch = new cfgTrees(value, rule, prefix, idpre + cleanName);
-                combine(this.idLabel, newBranch.idLabel);
-                combine(this.assortedDict, newBranch.assortedDict);
-                this.branches.push(newBranch);
-            }
-        } else if (name.startsWith('!')) {
-            cleanName = cleanName.substring(1, cleanName.length);
+        //! means the names are items
+        if (name.startsWith('!')) {
+            let itemname = name.substring(1);
             this.items = [];
-            let rawitems = processRand(rule[cleanName]);
-            for (let item of rawitems) {
-                this.items.push(prevName + " " + item);
-                this.idLabel[prevName + " " + item] = item;
+            this.items.push(prevName + " " + itemname);
+            this.idLabel[prevName + " " + itemname] = itemname;
+            this.val = 'item';
+        } else {
+            if (name.endsWith('$')) {
+                cleanName = name.substring(0, name.length - 1);
+                idpre = prevName + " ";
+            } else {
+                cleanName = name;
+                idpre = retRand(prefix) + ' ';
+                labelpre = idpre;
             }
+            if (name.startsWith('#')) {
+                this.branches = [];
+                cleanName = cleanName.substring(1);
+                let children: string[] = processRand(rule[cleanName]);
+                for (let value of children) {
+                    let newBranch = new cfgTrees(value, rule, prefix, idpre + cleanName);
+                    combine(this.idLabel, newBranch.idLabel);
+                    combine(this.assortedDict, newBranch.assortedDict);
+                    this.branches.push(newBranch);
+                }
+            }
+            this.val = idpre + cleanName;
+            this.idLabel[this.val] = labelpre + cleanName;
+            if (isUndefined(this.assortedDict[cleanName.toLowerCase()])) {
+                this.assortedDict[cleanName.toLowerCase()] = [];
+            }
+            this.assortedDict[cleanName.toLowerCase()].push(this.val);
         }
-        this.val = idpre + cleanName;
-        this.idLabel[this.val] = labelpre + cleanName;
-        if (isUndefined(this.assortedDict[cleanName.toLowerCase()])) {
-            this.assortedDict[cleanName.toLowerCase()] = [];
-        }
-        this.assortedDict[cleanName.toLowerCase()].push(this.val);
     }
 
     getValue(): string {
@@ -113,7 +103,9 @@ class cfgTrees {
         let ret: string[] = [];
         if (this.branches != null) {
             for (let value of this.branches) {
-                ret.push(value.val);
+                if (value.val != 'item') {
+                    ret.push(value.val);
+                }
             }
         }
         return ret;
@@ -154,7 +146,7 @@ class cfgTrees {
     getItemsList(): maps {
         let ret: maps = {};
         if (this.items != null) {
-            ret[this.val] = this.items
+            ret[this.prevName] = this.items
         }
         if (this.branches != null) {
             for (let tree of this.branches) {
@@ -176,58 +168,15 @@ class cfgTrees {
         return ret;
     }
 
-}
-
-//A structure for NPC constraint
-class constrain {
-    //additional requirements for items, locations, agents and location-item relationship.
-    item: string[];
-    location: string[];
-    agent: string[];
-    locationItem: maps;
-
-    constructor(data: string[]) {
-        this.item = [];
-        this.location = [];
-        this.agent = [];
-        this.locationItem = {};
-        //read the value inside of a parenthesis.
-        let regExp = /\(([^)]+)\)/;
-        for (let val of data) {
-            let parentheses = val.match(regExp)[1];
-            let input = parentheses.split(',');
-            //identify the motions of each goals.
-            if (val.toLowerCase().startsWith('pickup')) {
-                for (let i = 0; i < input.length; i++) {
-                    while (input[i].startsWith(' ')) {
-                        input[i] = input[i].substring(1);
-                    }
-                    while (input[i].endsWith(' ')) {
-                        input[i] = input[i].substring(0, input[i].length - 1);
-                    }
-                }
-                this.agent.push(input[0]);
-                this.item.push(input[1]);
-                this.location.push(input[2]);
-                if (isUndefined(this.locationItem[input[2]])) {
-                    this.locationItem[input[2]] = [];
-                }
-                this.locationItem[input[2]].push(input[1]);
-            } else if (val.toLowerCase().startsWith('move')) {
-                for (let i = 0; i < input.length; i++) {
-                    while (input[i].startsWith(' ')) {
-                        input[i] = input[i].substring(1);
-                    }
-                    while (input[i].endsWith(' ')) {
-                        input[i] = input[i].substring(0, input[i].length - 1);
-                    }
-
-                }
-                this.agent.push(input[0]);
-                this.location.push(input[1]);
+    print(): void {
+        console.log(this.getValue());
+        if (this.branches != null) {
+            for (let value of this.branches) {
+                value.print();
             }
         }
     }
+
 }
 
 //A function for combining to dictionary
@@ -255,7 +204,7 @@ async function readFiles(): Promise<maps> {
     let data: maps = {};
 
     for (let file of files) {
-        let value = await new Promise(function (resolve, reject) {
+        await new Promise(function (resolve, reject) {
                 let req = new XMLHttpRequest();
                 req.onreadystatechange = function () {
                     if (this.readyState == 4) {
@@ -281,8 +230,9 @@ async function readFiles(): Promise<maps> {
 //call all the functions needed
 readFiles().then(function (value) {
     let tree: cfgTrees = generateTree(value);
-    let condition: constrain = processCondition(value);
-    InitializeVilillane(tree, condition);
+    //tree.print();
+    // let condition: constrain = processCondition(value);
+    InitializeVilillane(tree);
 });
 
 //From the raw data to generate the context-free grammar trees for the map
@@ -294,12 +244,7 @@ function generateTree(data: maps): cfgTrees {
         let rows = rawRule[i].split(',');
         newRule[rows[0]] = rows[1];
     }
-    return new cfgTrees('#University', newRule, Prefix, '');
-}
-
-//From the raw data to generate the constraints
-function processCondition(data: maps): constrain {
-    return new constrain(data["NPCconstraint.txt"]);
+    return new cfgTrees('#University Map$', newRule, Prefix, '');
 }
 
 //For each elements of context free grammar, generate a random number of certain type
@@ -319,6 +264,7 @@ function processRand(data: string): string[] {
 
 
 //Randomly generate a connected graphs from a list of nodes
+//The connected graph is one-direction for the addLocation function of villanelle
 function connectNodes(location: string[]): maps {
     let nodes: maps = {};
     let visited: { [key: string]: boolean } = {};
@@ -343,6 +289,7 @@ function connectNodes(location: string[]): maps {
         }
     }
     //making sure it is connected
+    //Using dfs to differentiate clusters
     for (let i = 0; i < location.length; i++) {
         if (visited[location[i]] == false) {
             let item: string = location[i];
@@ -364,6 +311,7 @@ function connectNodes(location: string[]): maps {
             rest.push(item);
         }
     }
+    //Connect the clusters
     for (let i = 0; i < rest.length - 1; i++) {
         nodes[rest[i]].push(rest[i + 1]);
     }
@@ -371,60 +319,19 @@ function connectNodes(location: string[]): maps {
 }
 
 
-function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
-    //get assortDict for NPC constraint
-    let assortDict = Tree.getAssortedDict();
+function InitializeVilillane(Tree: cfgTrees) {
     //get itemList for display items
     let itemsList: maps = Tree.getItemsList();
     //get expandList to generate a expand graph
     let expandList: maps = Tree.getExpandList();
-    //get all initialized locations
-    let originlocations: string[] = Tree.getAlllocations();
     //get the initialized id pair
     let idLabelPair: { [key: string]: string } = Tree.getIdLabelPair();
     //get the initialized prevname pairs
     let PrevnameList: { [key: string]: string } = Tree.getPrevnameList();
     // agents
-    let alien = addAgent("Alien");
-    // items
-    let crewCard1 = addItem("Crew card1");
-    let crewCard2 = addItem("Crew card2");
-    // new constraint agents, locations and items
-    let conditionAgent = condition.agent;
-    let conditionlocation = condition.location;
-    let conditionlocationItem = condition.locationItem;
-
-    //Apply the constraint to change the initialized data.
-    for (let agent of conditionAgent) {
-        if (!agents.includes(agent)) {
-            addAgent(agent);
-        }
-    }
-    for (let loc of conditionlocation) {
-        if (!Object.keys(assortDict).includes(loc.toLowerCase()) && !originlocations.includes(loc)) {
-            expandList[Tree.getValue()].push(loc);
-            PrevnameList[loc] = Tree.getValue();
-            idLabelPair[loc] = loc;
-        }
-    }
-    for (let loc of Object.keys(conditionlocationItem)) {
-        if (!Object.keys(assortDict).includes(loc.toLowerCase()) && !originlocations.includes(loc)) {
-            itemsList[loc] = conditionlocationItem[loc];
-        } else if (Object.keys(assortDict).includes(loc.toLowerCase())) {
-            if (isUndefined(itemsList[assortDict[loc][0]])) {
-                itemsList[assortDict[loc][0]] = []
-            }
-            itemsList[assortDict[loc][0]] = itemsList[assortDict[loc][0]].concat(conditionlocationItem[loc]);
-
-        } else if (originlocations.includes(loc)) {
-            if (isUndefined(itemsList[loc])) {
-                itemsList[loc] = []
-            } else {
-                itemsList[loc] = itemsList[loc].concat(conditionlocationItem[loc]);
-            }
-        }
-    }
-
+    let NPC = addAgent("NPC");
+    //items
+    //add items to the villanelle
     for (let key of Object.keys(itemsList)) {
         for (let i = 0; i < itemsList[key].length; i++) {
             addItem(itemsList[key][i]);
@@ -434,12 +341,11 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
 
     //Generate the expandGraph from the modified expandList
     //For each expandable location, the dictionary contains a randomly connected graph for all its children
+    //The graph is one direction
     let expandGraph: { [key: string]: maps } = {};
     for (let keys of Object.keys(expandList)) {
         expandGraph[keys] = connectNodes(expandList[keys]);
     }
-    console.log(itemsList);
-
 
     //Add locations to villanelle
     function addLocationGraph(graph: maps) {
@@ -456,42 +362,31 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
         addLocationGraph(expandGraph[key]);
     }
 
+    //Initialize locations to assign items and agent
     let locations = Object.keys(locationGraph);
+    //Initialize player to be at one of the entrance of all universities
+    let allUniversity = expandList[Tree.getValue()];
 
-    //items variable
-    setItemVariable(crewCard1, "currentLocation", retRand(locations));
-    setItemVariable(crewCard2, "currentLocation", retRand(locations));
-    let itemDisplay = setVariable("itemDisplay", false);
 // variables
-
-//alien
-
-    setAgentVariable(alien, "currentLocation", retRand(locations));
-
-//player
-    let playerLocation = setVariable("playerLocation", retRand(locations));
-    let crewCardsCollected = setVariable("crewCardsCollected", 0);
+    let itemDisplay = setVariable("itemDisplay", false);
     let inventory = setVariable("inventory", []);
+    let selected = setVariable("selected", false);
+    let endGame = setVariable("endGame", false);
+    let selectedUniversity = setVariable("selectedUniversity", false);
+    let meet = setVariable("meet", false);
+
+
+//NPC
+    setAgentVariable(NPC, "currentLocation", retRand(locations));
+//player
+    let playerLocation = setVariable("playerLocation", retRand(allUniversity));
 
 // 2. Define BTs
-// create ground actions
-//     itemsList[getVariable(playerLocation)] = [];
-//
-//     allItems.push("card");
-//     addItem("card");
-//     setItemVariable("card", "currentLocation", getVariable(playerLocation));
-//     itemsList[getVariable(playerLocation)].push("card");
-//     allItems.push("book");
-//     addItem("book");
-//     setItemVariable("book", "currentLocation", getVariable(playerLocation));
-//     itemsList[getVariable(playerLocation)].push("book");
-//     allItems.push("key");
-//     addItem("key");
-//     setItemVariable("key", "currentLocation", getVariable(playerLocation));
-//     itemsList[getVariable(playerLocation)].push("key");
 
-    //Recover location array
+    //recover the array of all universities and location
     locations = Object.keys(locationGraph);
+    allUniversity = expandList[Tree.getValue()];
+
     let setRandNumber = action(
         () => true,
         () => {
@@ -499,15 +394,14 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
         },
         0
     );
-    //Initialize behavior tree for aliens
+    //Initialize behavior tree for NPCs
     let BTlist: Tick[] = [];
-    let id: number = 0;
     for (let i = 0; i < locations.length; i++) {
         //console.log(locations[i]);
         let actions: Tick = action(() => getVariable("randNumber") == i + 1, () => setVariable("destination", locations[i]), 0);
         BTlist.push(actions);
     }
-    let atDestination: Precondition = () => getVariable("destination") == getAgentVariable(alien, "currentLocation");
+    let atDestination: Precondition = () => getVariable("destination") == getAgentVariable(NPC, "currentLocation");
     let setDestinationPrecond: Precondition = () => isVariableNotSet("destination") || atDestination();
 
 // create behavior trees
@@ -519,18 +413,35 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
     let gotoNextLocation = action(
         () => true,
         () => {
-            setAgentVariable(alien, "currentLocation", getNextLocation(getAgentVariable(alien, "currentLocation"), getVariable("destination")));
-            console.log("Alien is at: " + getAgentVariable(alien, "currentLocation"))
+            setAgentVariable(NPC, "currentLocation", getNextLocation(getAgentVariable(NPC, "currentLocation"), getVariable("destination")));
+            console.log("NPC is at: " + getAgentVariable(NPC, "currentLocation"))
         },
         0
     );
-
-    let eatPlayer = action(() => getAgentVariable(alien, "currentLocation") == getVariable(playerLocation),
+    //agents BT for player meeting the agents
+    let setRandNumber_2 = action(
+        () => true,
         () => {
-            setVariable("endGame", "lose");
-            setVariable(playerLocation, "NA");
-        }, 0
+            setVariable("randNumber", getRandNumber(1, 3));
+        },
+        0
     );
+    let meetPlayer = sequence([setRandNumber_2,
+        guard(() => getAgentVariable(NPC, "currentLocation") == getVariable(playerLocation),
+            selector([
+                action(() => getVariable("randNumber") == 1, () => {
+                    setVariable('endMethod', 'love');
+                    setVariable(selectedUniversity, get_uni(getVariable(playerLocation)));
+                    setVariable(endGame, true);
+                }, 0),
+                action(() => getVariable("randNumber") == 2, () => {
+                    setVariable('endMethod', 'die');
+                    setVariable(endGame, true);
+                }, 0),
+                action(() => getVariable("randNumber") == 3, () =>
+                    setVariable(meet, true), 0)
+            ]))]);
+
 
     let search = sequence([
         selector([
@@ -541,21 +452,32 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
         gotoNextLocation,
     ]);
 
-    let alienBT = selector([
-        eatPlayer,
+    let NPCBT = selector([
+        meetPlayer,
         sequence([
-            search, eatPlayer
+            search, meetPlayer
         ])
     ]);
 
 //attach behaviour trees to agents
-    attachTreeToAgent(alien, alienBT);
+    attachTreeToAgent(NPC, NPCBT);
+
+    //a function to determine which university the current location is in
+    function get_uni(loc: string): string {
+        var uni: string = loc;
+        while (PrevnameList[uni] != Tree.getValue()) {
+            uni = PrevnameList[uni];
+        }
+        return uni;
+    }
 
     // 3. Construct story
+
     // create user actions from the graphs
     for (let key in locationGraph) {
         let seq: any[] = [];
         seq.push(displayDescriptionAction("You enter the " + idLabelPair[key] + "."));
+        seq.push(addUserAction("Select University.", () => setVariable(selected, true)));
         seq.push(addUserAction("Stay where you are.", () => {
         }));
         //Check whether it's in a lower layer
@@ -574,100 +496,111 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
             seq.push(addUserAction("Enter the " + idLabelPair[adj] + ".", () => setVariable(playerLocation, adj)));
         }
 
-        let StateBT = guard(() => getVariable(playerLocation) == key && getVariable(itemDisplay) == false,
+        let StateBT = guard(() => getVariable(playerLocation) == key &&
+            getVariable(itemDisplay) == false &&
+            getVariable(selected) == false &&
+            getVariable(endGame) == false,
             sequence(seq));
         addUserInteractionTree(StateBT);
     }
-    //Behavior tree for items
-    let itemBT = guard(() => !isUndefined(itemsList[getVariable(playerLocation)]) && itemsList[getVariable(playerLocation)].length != 0 && getVariable(itemDisplay) == false,
+
+    //Behavior tree for displaying items
+    let showitemBT = guard(() => !isUndefined(itemsList[getVariable(playerLocation)]) && itemsList[getVariable(playerLocation)].length != 0 && getVariable(itemDisplay) == false,
         sequence([
                 displayDescriptionAction("You notice items lying around."),
                 addUserAction("show all the items", () => setVariable(itemDisplay, true))
             ]
         ));
     //attach the bt to thr tree
-    addUserInteractionTree(itemBT);
+    addUserInteractionTree(showitemBT);
 
     //Create behavior trees for every items
     for (let i = 0; i < items.length; i++) {
-        let showitemBT = guard(() => getVariable(playerLocation) == getItemVariable(items[i], "currentLocation") && getVariable(itemDisplay) == true,
+        let ItemBT = guard(() => getVariable(playerLocation) == getItemVariable(items[i], "currentLocation")
+            && getVariable(itemDisplay) == true,
             sequence([
-                addUserAction("Pick up the " + items[i] + ".", () => {
+                addUserAction("Pick up the " + idLabelPair[items[i]] + ".", () => {
                     setVariable(itemDisplay, false);
-                    let curInv = getVariable("inventory");
+                    let curInv = getVariable(inventory);
                     curInv.push(items[i]);
                     itemsList[getVariable(playerLocation)].splice(itemsList[getVariable(playerLocation)].indexOf(items[i]), 1);
                     displayActionEffectText("You pick up the " + items[i] + ".");
                     setItemVariable(items[i], "currentLocation", "player");
-                    setVariable("inventory", curInv)
+                    setVariable(inventory, curInv)
                 })]
             ));
-        addUserInteractionTree(showitemBT);
+        addUserInteractionTree(ItemBT);
     }
 
-    //crewcard BT
-    let crewCard1BT = guard(() => getVariable(playerLocation) == getItemVariable(crewCard1, "currentLocation"),
+    //BT for selecting universities
+    var universitySeq: any[] = [];
+    for (let i = 0; i < allUniversity.length; i++) {
+        universitySeq.push(addUserAction("select " + allUniversity[i] + ".", () => {
+            setVariable(selectedUniversity, allUniversity[i]);
+            setVariable('endMethod', 'select');
+            setVariable(endGame, true);
+        }));
+    }
+    let universityBT = guard(() => getVariable(selected) == true && getVariable(endGame) == false,
+        sequence(universitySeq));
+    addUserInteractionTree(universityBT);
+    //Interaction BT for displaying meeting description 
+    let meetBT = guard(() => getVariable(meet) == true,
         sequence([
-                displayDescriptionAction("You notice a crew card lying around."),
-                addUserActionTree("Pick up the crew card",
-                    sequence([
-                        action(() => true, () => {
-                            displayActionEffectText("You pick up the crew card.");
-                            setItemVariable(crewCard1, "currentLocation", "player");
-                            setVariable(crewCardsCollected, getVariable(crewCardsCollected) + 1);
-                        }, 0),
-                        action(() => true, () => {
-                            displayActionEffectText("Wow you know how to pick up things.")
-                        }, 0)
-                    ])
-                )
-            ]
-        ));
+            action(() => true, () => setVariable(meet, false), 0),
+            displayDescriptionAction("Nothing happens between you and the stranger")]));
+    addUserInteractionTree(meetBT);
 
-    let crewCard2BT = guard(() => getVariable(playerLocation) == getItemVariable(crewCard2, "currentLocation"),
-        sequence([
-                displayDescriptionAction("You notice a crew card lying around."),
-                addUserAction("Pick up the crew card", () => {
-                    displayActionEffectText("You pick up the crew card.");
-                    setItemVariable(crewCard2, "currentLocation", "player");
-                    setVariable(crewCardsCollected, getVariable(crewCardsCollected) + 1);
-                })
-            ]
-        ));
-
-    //A BT for the exit
-    let ExitBT = guard(() => getVariable(playerLocation) == "Exit",
-        selector([
-            guard(() => getVariable(crewCardsCollected) >= 2,
+    //BT for location description
+    for (let i = 0; i < locations.length; i++) {
+        let rand = Math.random();
+        if (rand < 0.1) {
+            let brokenBT = guard(() => getVariable(playerLocation) == locations[i] &&
+                getVariable(itemDisplay) == false &&
+                getVariable(selected) == false &&
+                getVariable(endGame) == false,
                 sequence([
-                    displayDescriptionAction("You can now activate the exit and flee!"),
-                    addUserAction("Activate and get out!", () => {
-                        setVariable("endGame", "win");
-                        setVariable(playerLocation, "NA")
-                    })
-                ])),
-            displayDescriptionAction("You need 2 crew cards to activate the exit elevator system.")
-        ]));
-
-    addUserInteractionTree(crewCard1BT);
-    addUserInteractionTree(crewCard2BT);
-    addUserInteractionTree(ExitBT);
-
-    let alienNearby = guard(() => areAdjacent(getVariable(playerLocation), getAgentVariable(alien, "currentLocation")),
-        displayDescriptionAction("You hear a thumping sound. The alien is nearby."));
-    addUserInteractionTree(alienNearby);
-
-    let gameOver = guard(() => getVariable(playerLocation) == "NA",
+                    displayDescriptionAction('The place you enter is broken!')
+                ]));
+            addUserInteractionTree(brokenBT);
+        } else if (rand < 0.2) {
+            let fancyBT = guard(() => getVariable(playerLocation) == locations[i] &&
+                getVariable(itemDisplay) == false &&
+                getVariable(selected) == false &&
+                getVariable(endGame) == false,
+                sequence([
+                    displayDescriptionAction('The place you enter is fancy!')
+                ]));
+            addUserInteractionTree(fancyBT);
+        }
+    }
+    //BT for end of the game
+    //The game may end when the player select university 
+    //Or the player meet an agent and fall in love with him 
+    //Or the player meet an agent and accidentally killed by him
+    let gameOver = guard(() => getVariable(endGame) == true,
         selector([
-                guard(() => getVariable("endGame") == "win",
-                    displayDescriptionAction("You have managed to escape!")),
-                guard(() => getVariable("endGame") == "lose",
-                    displayDescriptionAction("The creature grabs you before you can react! You struggle for a bit before realising it's all over.."))
+                action(
+                    () => getVariable('endMethod') == 'select',
+                    () => {
+                        userInteractionObject.text += "\n" + "You decide to go to " + getVariable(selectedUniversity) + "!"
+                    }, 0
+                ),
+                action(
+                    () => getVariable('endMethod') == 'love',
+                    () => {
+                        userInteractionObject.text += "\n" + "You fall in love with the one you met, finally decide go to " +
+                            getVariable(selectedUniversity) + '!'
+                    }, 0
+                ),
+                guard(() => getVariable('endMethod') == 'die',
+                    displayDescriptionAction("Sadly, You are killed by the stranger you meet!"))
             ]
-        ));
+        ))
+    ;
     addUserInteractionTree(gameOver);
 
-//Initialize sigma for player and alien
+//Initialize sigma for player and NPC
     let sigmaPlayer = new sigma({
         graph: {
             nodes: [],
@@ -689,24 +622,15 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
             sideMargin: 15
         }
     });
-    // var tooltipPlayer = sigma.plugins.tooltips(
-    //     sigmaPlayer,
-    //     sigmaPlayer.renderers[0],
-    //     {
-    //         node: [{
-    //             show: 'clickNode',
-    //             template: 'Hello node!'
-    //         }]
-    //     }
-    // );
-    let sigmaAlien = new sigma({
+
+    let sigmaNPC = new sigma({
         graph: {
             nodes: [],
             edges: []
         },
         renderer: {
             type: 'canvas',
-            container: 'alien-container'
+            container: 'NPC-container'
         },
         settings: {
             nodeBorderSize: 5,
@@ -719,20 +643,11 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
             sideMargin: 15
         }
     });
-    // var tooltipAlien = sigma.plugins.tooltips(
-    //     sigmaAlien,
-    //     sigmaAlien.renderers[0],
-    //     {
-    //         node: [{
-    //             show: 'clickNode',
-    //             template: 'Hello node!'
-    //         }]
-    //     }
-    // );
+
     //A unique ID for each edge.
     let edgeID: number = 0;
 
-    //Clear the graph.
+    //Clear up the graph.
     function clear(sigma: any) {
         let nodes = sigma.graph.nodes();
         for (let node of nodes) {
@@ -798,7 +713,6 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
     function show(inputid: string, sigmaInstance: any) {
         let graph = completeGraph(expandGraph[PrevnameList[inputid]]);
         let adjacent = graph[inputid];
-        let numberLayer = adjacent.length;
         showAround(inputid, sigmaInstance)
         //Show additional nodes if all the node in this layer is small enough
         if (Object.keys(graph).length < 10) {
@@ -830,7 +744,7 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
     });
 
     let dragListener2 = sigma.plugins.dragNodes(
-        sigmaAlien, sigmaAlien.renderers[0]);
+        sigmaNPC, sigmaNPC.renderers[0]);
 
     dragListener2.bind('startdrag', function (event: string) {
         console.log(event);
@@ -856,80 +770,99 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
     let actionsPanel = {x: 470, y: 375};
 
     function render() {
-        //for all the parents locations of the agents
-        let alienPrevs: string[] = [];
+        //get all the parents locations of the agents
+        let NPCPrevs: string[] = [];
         let playerPrevs: string[] = [];
-        let AlienPrevLocs: string;
+        let NPCPrevLocs: string;
         let PlayerPrevLocs: string;
         //get agents' current location
-        let alienLocation = getAgentVariable(alien, "currentLocation");
+        let NPCLocation = getAgentVariable(NPC, "currentLocation");
         let playerL = getVariable(playerLocation);
-        //generate all the parents locations of the alien
-        AlienPrevLocs = PrevnameList[alienLocation];
-        while (AlienPrevLocs != Tree.getValue()) {
-            alienPrevs.push(AlienPrevLocs);
-            AlienPrevLocs = PrevnameList[AlienPrevLocs];
+        //generate all the parents locations of the NPC
+        NPCPrevLocs = PrevnameList[NPCLocation];
+        while (NPCPrevLocs != Tree.getValue()) {
+            NPCPrevs.push(NPCPrevLocs);
+            NPCPrevLocs = PrevnameList[NPCPrevLocs];
         }
-        //make sure the game is not ended.
-        if (Object.keys(locationGraph).includes(playerL)) {
-            //generate all the parents locations of the player
-            PlayerPrevLocs = PrevnameList[playerL];
-            while (PlayerPrevLocs != Tree.getValue()) {
-                playerPrevs.push(PlayerPrevLocs);
-                PlayerPrevLocs = PrevnameList[PlayerPrevLocs];
-            }
-            clear(sigmaPlayer);
-            clear(sigmaAlien);
-            show(playerL, sigmaPlayer);
-            show(alienLocation, sigmaAlien);
-            var playerText = document.getElementsByClassName("lefttext");
-            playerText[0].innerHTML = "level: " + playerPrevs.length.toString() + ", currently inside "+PrevnameList[playerL];
-            var AgentText = document.getElementsByClassName("righttext");
-            AgentText[0].innerHTML = "level: " + alienPrevs.length.toString() +  ", currently inside "+PrevnameList[alienLocation];
+        //generate all the parents locations of the player
+        PlayerPrevLocs = PrevnameList[playerL];
+        while (PlayerPrevLocs != Tree.getValue()) {
+            playerPrevs.push(PlayerPrevLocs);
+            PlayerPrevLocs = PrevnameList[PlayerPrevLocs];
+        }
+        //Clear the previous scene
+        clear(sigmaPlayer);
+        clear(sigmaNPC);
+        //Show
+        show(playerL, sigmaPlayer);
+        show(NPCLocation, sigmaNPC);
+        //Modify the level indicator for player perspective
+        var playerText = document.getElementsByClassName("lefttext");
+        var playerinnerHtml: string = '';
+        for (var i = 0; i <= playerPrevs.length; i++) {
+            playerinnerHtml += '<span class="playerdot"></span>';
+        }
+        //adding higher level location names for player perspective
+        if (PrevnameList[playerL] == Tree.getValue()) {
+            playerinnerHtml += '  ' + Tree.getValue() + '/';
         } else {
-            clear(sigmaAlien);
-            clear(sigmaPlayer);
-            sigmaPlayer.refresh();
-            sigmaAlien.refresh();
-            //show(alienLocation, sigmaAlien);
+            playerinnerHtml += '  ' + PrevnameList[PrevnameList[playerL]] + '/';
+            playerinnerHtml += PrevnameList[playerL] + '/';
         }
+        //Modify the level indicator for player perspective
+        playerText[0].innerHTML = playerinnerHtml;
+        var AgentText = document.getElementsByClassName("righttext");
+        var AgentinnerHtml: string = '';
+        for (var i = 0; i <= NPCPrevs.length; i++) {
+            AgentinnerHtml += '<span class="agentdot"></span>';
+        }
+        //adding higher level location names for agent perspective
+        if (PrevnameList[NPCLocation] == Tree.getValue()) {
+            AgentinnerHtml += '  ' + Tree.getValue() + '/';
+        } else {
+            AgentinnerHtml += '  ' + PrevnameList[PrevnameList[NPCLocation]] + '/';
+            AgentinnerHtml += PrevnameList[NPCLocation] + '/';
+        }
+        AgentText[0].innerHTML = AgentinnerHtml;
         //show the locations of player and agents on the graph
+        //the image of boy from http://www.urltarget.com/icon-symbol-people-boy-man-male-cartoon-scout.html
         for (let node of sigmaPlayer.graph.nodes()) {
-            if (node.id == alienLocation) {
-                node.image = {url: '../images/xenomorph.png'};
+            if (node.id == NPCLocation) {
+                node.image = {url: '../images/boy.png'};
             }
             if (node.id == playerL) {
                 node.image = {url: '../images/player2.png'};
             }
-            if (alienPrevs.includes(node.id)) {
+            if (NPCPrevs.includes(node.id)) {
                 node.border_color = '#ff0000';
             }
             if (!isUndefined(itemsList[node.id]) && itemsList[node.id].length != 0) {
                 node.border_color = '#0000FF';
             }
         }
-        for (let node of sigmaAlien.graph.nodes()) {
-            if (node.id == alienLocation) {
-                node.image = {url: '../images/xenomorph.png'};
-            }
+        for (let node of sigmaNPC.graph.nodes()) {
             if (node.id == playerL) {
                 node.image = {url: '../images/player2.png'};
+            }
+            if (node.id == NPCLocation) {
+                node.image = {url: '../images/boy.png'};
             }
             if (playerPrevs.includes(node.id)) {
                 node.border_color = '#ADFF2F';
             }
         }
         sigmaPlayer.refresh();
-        sigmaAlien.refresh();
+        sigmaNPC.refresh();
+
+        //algorithm for no lapping layout.
         let config = {
             nodeMargin: 50,
             gridSize: 5,
         };
 
-        //algorithm for no lapping layout.
         //Configure the algorithm
         let listener1 = sigmaPlayer.configNoverlap(config);
-        let listener2 = sigmaAlien.configNoverlap(config);
+        let listener2 = sigmaNPC.configNoverlap(config);
 
 
         //Bind all events:
@@ -942,11 +875,12 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
 
         //Start the algorithm:
         sigmaPlayer.startNoverlap();
-        sigmaAlien.startNoverlap();
+        sigmaNPC.startNoverlap();
 
         displayTextAndActions();
     }
 
+    //Get canvas
     let canvas = <HTMLCanvasElement> document.getElementById('display');
     let context = canvas.getContext('2d');
 
@@ -976,7 +910,6 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
         }
 
         displayArrow();
-        console.log("Crew cards: " + getVariable(crewCardsCollected));
     }
 
     function displayArrow() {
@@ -1014,7 +947,7 @@ function InitializeVilillane(Tree: cfgTrees, condition: constrain) {
             }
         }
     }
-
+    //Initialize the visualization
     render();
 
     document.addEventListener("keypress", keyPress, false);

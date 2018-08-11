@@ -21,6 +21,20 @@
             top:30px;
             position:absolute;
         }
+        .playerdot {
+            height: 18px;
+            width: 18px;
+            background-color: greenyellow;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .agentdot {
+            height: 18px;
+            width: 18px;
+            background-color: red;
+            border-radius: 50%;
+            display: inline-block;
+        }
     </style>
 
 </head>
@@ -30,7 +44,7 @@
 <body>
 
 <div class="lefttext"></div>
-<div class="righttext">Tests</div>
+<div class="righttext"></div>
 
 <div class="container">
 
@@ -48,7 +62,7 @@
             align-content: center;
         }
 
-        #alien-container {
+        #NPC-container {
             position: absolute;
             top: 50px;
             right: 50px;
@@ -63,7 +77,7 @@
         }
     </style>
     <div id="player-container"></div>
-    <div id="alien-container"></div>
+    <div id="NPC-container"></div>
 
 </div>
 <script type="text/javascript" src="bundle.js"></script>
